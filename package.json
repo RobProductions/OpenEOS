@@ -1,0 +1,21 @@
+{
+  "name": "com.robproductions.openeos",
+  "version": "1.0.0",
+  "displayName": "Open EOS",
+  "description": "A lightweight & open-source port of the Epic Online Services (EOS) SDK in Unity Package format, with minor enhancements to provide a smoother integration between Unity and EOS.",
+  "unity": "2020.3",
+  "changelogUrl": "https://github.com/RobProductions/OpenEOS",
+  "licensesUrl": "https://github.com/RobProductions/OpenEOS/blob/main/LICENSE",
+  "license": "MIT License",
+  "keywords": [
+    "epic",
+	"epicgames",
+	"eos",
+	"sdk",
+	"integration"
+  ],
+  "author": {
+    "name": "RobProductions",
+    "url": "https://github.com/RobProductions"
+  },
+}
