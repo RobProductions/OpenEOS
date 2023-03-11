@@ -7,9 +7,15 @@ using Epic.OnlineServices.Platform;
 namespace RobProductions.OpenEOS
 {
 	/// <summary>
-	/// Representation of a setup configuration for the EOS Core.
-	/// Create this data set in your code and pass it in to the Core for a 
+	/// Representation of a setup configuration for the EOSCore.
+	/// Create this data set in your code and pass it in to the EOSCore.Init for a 
 	/// Quick Initialization process!
+	/// <br></br><br></br>
+	/// It is recommended that you insert your own setup layer within your manager
+	/// that is then passed into this set to work with cleaner data. i.e. you can hide
+	/// your secrets, ignore unneeded parameters, and swap sandboxID based
+	/// on an enum instead of a string. This class is left intentionally
+	/// generic to handle all cases in the future.
 	/// </summary>
 	public class EOSInitSet
 	{
