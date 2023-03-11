@@ -62,6 +62,14 @@ namespace RobProductions.OpenEOS
 		/// This lets you more finely control the enabled SDK features.
 		/// </summary>
 		public PlatformFlags platformFlags = PlatformFlags.None;
+
+		//Optional Interface Options
+
+		/// <summary>
+		/// Optional: Encryption key used by player data storage & title storage.
+		/// Will be treated as null if empty string.
+		/// </summary>
+		public string encryptionKey = "";
 	}
 }
 
