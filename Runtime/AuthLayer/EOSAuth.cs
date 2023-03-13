@@ -20,7 +20,7 @@ namespace RobProductions.OpenEOS
 		/// <br></br><br></br>
 		/// Note that you can't actually do anything too useful with the returned EpicAccountId.
 		/// To do things like unlocking achievements for the user, once Auth is successful you
-		/// need to then use returned EpicAccountId & convert to token to input for the secondary login:
+		/// need to then use returned EpicAccountId & convert to token as input for the secondary login:
 		/// Use EOSCore.LoginConnect (or start with it instead) to get a generic ProductUserId,
 		/// and then you can utilize the ProductUserId in Epic's other SDK calls.
 		/// </summary>
@@ -28,7 +28,7 @@ namespace RobProductions.OpenEOS
 		/// <param name="loginSet">Set of parameters that will determine credential type and info.
 		/// This could either be a developer account, persistent auth, or account portal.
 		/// </param>
-		/// <param name="loginCompleteDelegate">
+		/// <param name="loginCompleteCallback">
 		/// Callback function that is run when EOS Auth async Login() is complete.
 		/// Check for LoginCallbackInfo.Result to see if the login was successful.
 		/// </param>
@@ -122,6 +122,124 @@ namespace RobProductions.OpenEOS
 
 		//SHORTCUT LOGIN ACTIONS
 
+		/// <summary>
+		/// When you don't care to use 2 different callbacks for translating
+		/// EpicAccountId to ProductUserId, make one of these callbacks
+		/// which will receive the combined results from either Login
+		/// or Create user in the LoginEpicAccountToProductUserWithCreate().
+		/// </summary>
+		/// <param name="result">Result code returned by either Login or Create User callback</param>
+		/// <param name="returnedId">Created or Logged in ProductUserId</param>
+		/// <param name="didCreate">Whether the ProductUserId was created or just logged in</param>
+		public delegate void CreateOrLoginPUIDCallback(Result result, ProductUserId returnedId, bool didCreate);
+
+		/// <summary>
+		/// Tired of using 2 seperate callbacks just to translate your EpicAccountId?
+		/// This helper function performs the step of attempting ConnectLogin
+		/// and creates the missing account if necessary, but consolidates the result
+		/// into one CreateOrLoginPUIDCallback which is populated with the final ProductUserId
+		/// and some info about the result/whether account creation occurred.
+		/// </summary>
+		/// <param name="platformSession"></param>
+		/// <param name="epicAccount"></param>
+		/// <param name="createOrLoginCallback"></param>
+		/// <returns></returns>
+		public static bool LoginEpicAccountToProductUserWithCreate(PlatformInterface platformSession, EpicAccountId epicAccount,
+			CreateOrLoginPUIDCallback createOrLoginCallback)
+		{
+			return LoginEpicAccountToProductUserWithCreate(
+				platformSession, 
+				epicAccount,
+				(ref Epic.OnlineServices.Connect.LoginCallbackInfo info) =>
+				{
+					createOrLoginCallback.Invoke(info.ResultCode, info.LocalUserId, false);
+				},
+				(ref Epic.OnlineServices.Connect.CreateUserCallbackInfo info) =>
+				{
+					createOrLoginCallback.Invoke(info.ResultCode, info.LocalUserId, true);
+				}
+			);
+		}
+
+		/// <summary>
+		/// Like LoginEpicAccountToProductUser, but with the additional step
+		/// of creating the account if it is detected to be missing.
+		/// Will return a result to EITHER loginCompleteCallback, or createUserCallback,
+		/// depending on whether it had to create an account or not.
+		/// Note that loginCompleteCallback could come back with Result == success,
+		/// if no creation was necessary. So be sure to check both callbacks.
+		/// </summary>
+		/// <param name="platformSession"></param>
+		/// <param name="epicAccount"></param>
+		/// <param name="loginCompleteCallback"></param>
+		/// <param name="createUserCallback"></param>
+		/// <returns>True if started successfully, false if otherwise</returns>
+		public static bool LoginEpicAccountToProductUserWithCreate(PlatformInterface platformSession, EpicAccountId epicAccount,
+			Epic.OnlineServices.Connect.OnLoginCallback loginCompleteCallback, 
+			Epic.OnlineServices.Connect.OnCreateUserCallback createUserCallback)
+		{
+			var connectInterface = platformSession.GetConnectInterface();
+			if (connectInterface == null)
+			{
+				EOSCore.LogEOS("Warning: Could not retrieve ConnectInterface from provided platformSession");
+				return false;
+			}
+
+			return LoginEpicAccountToProductUser(
+				platformSession,
+				epicAccount,
+				(ref Epic.OnlineServices.Connect.LoginCallbackInfo info) =>
+				{
+					if (info.ResultCode == Result.InvalidUser)
+					{
+						//Connect Login failed due to the user missing or not created yet,
+						//So attempt to create it here and then pass on the result
+						//to the provided callback
+						if (info.ContinuanceToken == null)
+						{
+							//Continuance token was null,
+							//Theoretically this shouldn't happen with "InvalidUser" but you never know.
+							//This issue happened to me when I provided the token incorrectly
+							//to ConnectLogin, but it gave a different Result code.
+							EOSCore.LogEOS("Warning: ContinuanceToken was null attempting to create Connect User. "
+								+ "This signifies an issue with the credentials and/or token.");
+							loginCompleteCallback.Invoke(ref info);
+						}
+						else
+						{
+							//Continuance token is here, so create the new user
+							//with that token and use the provided callback to complete the op
+							var createOptions = new Epic.OnlineServices.Connect.CreateUserOptions()
+							{
+								ContinuanceToken = info.ContinuanceToken,
+							};
+
+							connectInterface.CreateUser(ref createOptions, null, createUserCallback);
+						}
+					}
+					else
+					{
+						//Connect Login was already successful or failed for some other reason,
+						//just pass the result
+						loginCompleteCallback.Invoke(ref info);
+					}
+				}
+			);
+		}
+
+		/// <summary>
+		/// Have an EpicAccountId that you need translated to a ProductUserId?
+		/// This is a helper function that calls EOSAuth.LoginConnect after performing
+		/// some magic on your EpicAccount to link it to a generic Connect account,
+		/// then uses your provided callback to return the result.
+		/// Note that you may face "account not created" (InvalidUser) errors if
+		/// its the first time connecting, in which case see the 
+		/// LoginEpicAccountToProductUserWithCreate() to also create missing Connect accounts.
+		/// </summary>
+		/// <param name="platformSession"></param>
+		/// <param name="epicAccount"></param>
+		/// <param name="loginCompleteCallback"></param>
+		/// <returns>True if the Connect Login call started as expected, false if otherwise</returns>
 		public static bool LoginEpicAccountToProductUser(PlatformInterface platformSession, EpicAccountId epicAccount,
 			Epic.OnlineServices.Connect.OnLoginCallback loginCompleteCallback)
 		{
@@ -166,6 +284,88 @@ namespace RobProductions.OpenEOS
 			};
 
 			return LoginConnect(platformSession, credentials, null, loginCompleteCallback);
+		}
+
+		//COMMAND LINE HELPER
+
+		/// <summary>
+		/// As per https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface,
+		/// when launched through the Epic Games Launcher,
+		/// the app's command line will be given 3 special codes:
+		/// AUTH_LOGIN, AUTH_TYPE, and AUTH_PASSWORD,
+		/// of which one is useful (password, which acts as the credential token)
+		/// but I will check Auth Type just in case. Use this token
+		/// to easily log in a user (to Auth service for EpicAccountId, using the ExchangeCode mode)
+		/// without requiring the web browser.
+		/// </summary>
+		/// <returns>The token parsed from the command line</returns>
+		public static string GetExchangeCodeToken()
+		{
+			var authTypeCode = GetCommandLineArgValue("-AUTH_TYPE");
+			if(authTypeCode != null && authTypeCode == "exchangecode")
+			{
+				var pass = GetCommandLineArgValue("-AUTH_PASSWORD");
+				if(pass == null)
+				{
+					EOSCore.LogEOS("Warning: AUTH_PASSWORD was null!");
+				}
+
+				return pass;
+			}
+			else
+			{
+				EOSCore.LogEOS("Warning: AUTH_TYPE was not exchangecode");
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Split a full command argument into its value.
+		/// </summary>
+		/// <param name="argName"></param>
+		/// <returns>The value after the = sign in a command line argument</returns>
+		public static string GetCommandLineArgValue(string argName)
+		{
+			var fullVal = GetCommandLineArg(argName);
+			if(fullVal != null)
+			{
+				var valSplit = fullVal.Split(new[] { '=' }, 2);
+				if(valSplit.Length > 1)
+				{
+					return valSplit[1];
+				}
+				else
+				{
+					EOSCore.LogEOS("Warning: CommandLineArg " + fullVal + " could not be split with seperator");
+				}
+			}
+			else
+			{
+				EOSCore.LogEOS("Warning: CommandLineArg " + argName + " did not exist in System environment");
+			}
+			return null;
+		}
+
+		/// <summary>
+		/// Returns an argument name that starts with the given string.
+		/// Epic Launcher formats some arguments like -NAME=VALUE,
+		/// so we want to detect the given name and return the full string
+		/// to parse out the value.
+		/// </summary>
+		/// <param name="startsWith"></param>
+		/// <returns>The full string of the argument</returns>
+		public static string GetCommandLineArg(string startsWith)
+		{
+			var args = System.Environment.GetCommandLineArgs();
+			for (int i = 0; i < args.Length; i++)
+			{
+				if (args[i].StartsWith(startsWith))
+				{
+					return args[i];
+				}
+			}
+			return null;
 		}
 	}
 }
