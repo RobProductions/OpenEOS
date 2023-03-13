@@ -1,7 +1,7 @@
 # OpenEOS
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/RobProductions/OpenEOS?logo=github)
 
-An open-source port of the Epic Online Services (EOS) SDK in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
+An open-source port of the [Epic Online Services (EOS) SDK](https://dev.epicgames.com/docs/epic-online-services) in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
 
 <img width = "800" src="Documentation~/DocAssets/OpenEOSLogoBanner.jpg">
 
@@ -12,18 +12,55 @@ OpenEOS offers 2 main services to your Unity project:
 1. A port of the relevant EOS SDK files, including C# and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of having to manage the SDK on a project-by-project basis in your Assets folder.
 2. A few helper extensions and shortcuts for commonly used Epic Online Services features, such as SDK Initialization and Account Management.
 
-### Why Use OpenEOS?
+### OpenEOS... Why?
 
+When researching the EOS SDK for use in my own projects, I was surprised to see only one or two usable plugins for integration with Unity (at the time of writing). Looking into those, they're pretty robust in their own right. However, they seem to offer full "manager" solutions that don't allow for much customization and essentially sit completely on top of the regular Online Services library.
 
-### What is 
+My goal for OpenEOS was to provide a more lightweight solution that can easily be deployed to all of my projects; something more organized than Epic's recommended "drag and drop into Assets" workflow but more customizable than the existing EOS Manager packages out there today. Overall, I set out to create a package that lets you jumpstart *your own* EOS Manager which can be customized per project while also eliminating a lot of redundant work with some helpful extensions. As such, this is not a complete solution by any means and you'll be expected to write your own EOS Manager that interfaces with the OpenEOS layer or the EOS SDK directly.
 
+If you're looking for a more robust solution that comes with its own manager, I highly recommend [PlayEveryWhere's EOS Plugin for Unity](https://github.com/PlayEveryWare/eos_plugin_for_unity). The package is officially recommended by Epic and will quickly get your project set up if you don't care about fine tuning your implementation of the SDK. I also want to thank [Dylan Hunt's EOS-Unity project](https://gitlab.com/dylanh724/eos-unity) as it helped me understand the common init steps for EOS. I believe the project is deprecated now but still serves as a useful reference for getting set up with the SDK.
 
+### How should I use OpenEOS?
+
+You can use OpenEOS in either or both of the following ways:
+
+1. A neatly packaged container for the EOS SDK that you can interface with directly by importing the Epic.OnlineServices namespace into your custom setup code.
+2. A set of extensions that themselves can interact with the packaged SDK which provide helper functions to let you more quickly get around the SDK. Simply import the RobProductions.OpenEOS namespace and you can use the EOSCore and EOSAuth static libraries to quickly implement some common SDK steps: Initialization, Shutdown, Auth system login, Connect system login, translating EpicAccountId to ProductUserId, and acquiring the Exchange Code from EGS Launcher.
 
 ## Versioning
 
-Since this package is both a port of the EOS SDK and an extension 
+Since this package is both a port of the EOS SDK and an extension, there is the unique challenge of versioning since the package code builds on top of the included EOS SDK version. Since users likely care about which version of the SDK they are integrating and are compatible with, the Release Number will be laid out like this:
 
-1.15.5
+*X.X-Y.Y.Y* where X.X is the package code version and Y.Y.Y is the Epic Online Services SDK version. Example: 1.3-1.15.2 means package version 1.3 targeting EOS SDK version 1.15.2.
+
+**Current EOS SDK Target:** 1.15.5
+
+### Disclaimer
+
+Updates to the EOS SDK may happen out of sync with the project code, and vice versa. It's unlikely that the package would ever travel backwards in target EOS version, so expect that package updates will only ever update the SDK forwards. *Example: If you're looking for package version 1.3 targeting SDK 1.14 but version 1.3 already targeted 1.15.2, you're out of luck unless a specific branch or release is created.*
+
+## Usage
+
+As mentioned above, you could use this package to simply interface with the SDK directly or utilize some wrapper shortcuts provided by OpenEOS. Let's start with the first use case.
+
+### Accessing Epic Online Services SDK
+
+Once the package is installed, you simply need to import whatever EOS namespace you'd like to begin working with the SDK inside your own EOS Manager. This could be Epic.OnlineServices, Epic.OnlineServices.Auth, Epic.OnlineServices.Connect, etc. See [Epic's EOS documentation](https://dev.epicgames.com/docs/epic-online-services) for more info on how to use these services. The [C# getting started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started) is also helpful as it provides some setup steps for working with Unity. If you import this package, you can forgo the first few steps where you import the SDK and configure the DLLs.
+
+The [EOS SDK API](https://dev.epicgames.com/docs/api-ref) is helpful for viewing how the interfaces work and what parameters they expect. If you're new to the EOS SDK I'd recommend first understanding the full flow that Epic expects from your project. You can use [this doc page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/introduction-resources) to learn a bit more about it, though it's hard to find any solid steps without looking through examples. I will briefly summarize the expected flow you have to take within your EOS Manager here:
+
+1. Initialize the SDK (in Editor mode, this is a little more complicated as you have [dynamically load and unload](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started) the EOS Libraries)
+2. Acquire the PlatformInterface which acts as your EOS session and ensure that you call .tick() on some time interval
+3. Use Auth system to log in an Epic User (if you wish to provide that option)
+4. Use the Connect system to log in a generic user through some provider, or convert the Epic User into the generic Product User
+5. Use the stored PlatformInterface and user data whenever you need to interact with the SDK
+6. Shutdown the SDK on App exit and release the memory used by the PlatformInterface
+
+### EOSCore Layer
+
+If you'd like a slightly easier time performing common core SDK steps within your EOS Manager, you can import the RobProductions.OpenEOS namespace and use the helper functions provided by EOSCore to initialize and shutdown the SDK. All of the code contains summary comments so you can read about what each function does in your IDE.
+
+**EOSCore.Init()** will automatically initialize the SDK. It uses the custom EOSInitSet class for you to provide your init configuration, mainly the 5 secret IDs that can associate your app with the EOS service. 
 
 ## Installation
 
