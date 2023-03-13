@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Epic.OnlineServices.Auth;
-
+using Epic.OnlineServices;
 
 namespace RobProductions.OpenEOS
 {
@@ -25,11 +25,21 @@ namespace RobProductions.OpenEOS
 
 		/// <summary>
 		/// The ID of the login credential. Will differ based on credentialType,
-		/// could be a username or unique ID for a dev user.
+		/// could be a username or domain of dev user (localhost:port).
 		/// </summary>
 		public string credentialID = "";
 
+		/// <summary>
+		/// The token/secret used to log in this user. Will differ based on credentialType.
+		/// Could be dev username, continuance token, or exchange token passed from console, etc.
+		/// </summary>
 		public string credentialToken = "";
+
+		/// <summary>
+		/// Used in the ExternalAuth credential type and ignored for any other type.
+		/// Determines the source of the external credential.
+		/// </summary>
+		public ExternalCredentialType credentialExternalType = ExternalCredentialType.Epic;
 
 		/// <summary>
 		/// Permissions requested for this login session.
