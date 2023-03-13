@@ -9,8 +9,8 @@ An open-source port of the Epic Online Services (EOS) SDK in Unity Package forma
 
 OpenEOS offers 2 main services to your Unity project:
 
-1. A port of the relevant EOS SDK files, including C# and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of going about it through the usual drag-and-drop method Epic expects from you 
-2. A few extensions and shortcuts to the Epic Online Services 
+1. A port of the relevant EOS SDK files, including C# and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of having to manage the SDK on a project-by-project basis in your Assets folder.
+2. A few helper extensions and shortcuts for commonly used Epic Online Services features, such as SDK Initialization and Account Management.
 
 ### Why Use OpenEOS?
 
