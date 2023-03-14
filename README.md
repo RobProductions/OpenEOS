@@ -1,7 +1,7 @@
 # OpenEOS
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/RobProductions/OpenEOS?logo=github)
 
-An open-source port of the Epic Online Services (EOS) SDK in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
+An open-source port of the [Epic Online Services (EOS) SDK](https://dev.epicgames.com/docs/epic-online-services) in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
 
 <img width = "800" src="Documentation~/DocAssets/OpenEOSLogoBanner.jpg">
 
@@ -9,21 +9,80 @@ An open-source port of the Epic Online Services (EOS) SDK in Unity Package forma
 
 OpenEOS offers 2 main services to your Unity project:
 
-1. A port of the relevant EOS SDK files, including C# and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of going about it through the usual drag-and-drop method Epic expects from you 
-2. A few extensions and shortcuts to the Epic Online Services 
+1. A port of the relevant EOS SDK files, including C# and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of having to manage the SDK on a project-by-project basis in your Assets folder.
+2. A few helper extensions and shortcuts for commonly used Epic Online Services features, such as SDK Initialization and Account Management.
 
-### Why Use OpenEOS?
+### OpenEOS... Why?
 
+When researching the EOS SDK for use in my own projects, I was surprised to see only one or two usable plugins for integration with Unity (at the time of writing). Looking into those, they're pretty robust in their own right. However, they seem to offer full "manager" solutions that don't allow for much customization and essentially sit completely on top of the regular Online Services library.
 
-### What is 
+My goal for OpenEOS was to provide a more lightweight solution that can easily be deployed to all of my projects; something more organized than Epic's recommended "drag and drop into Assets" workflow but more customizable than the existing EOS Manager packages out there today. Overall, I set out to create a package that lets you jumpstart *your own* EOS Manager which can be customized per project while also eliminating a lot of redundant work with some helpful extensions. As such, this is not a complete solution by any means and you'll be expected to write your own EOS Manager that interfaces with the OpenEOS layer or the EOS SDK directly.
 
+If you're looking for a more robust solution that comes with its own manager, I highly recommend [PlayEveryWhere's EOS Plugin for Unity](https://github.com/PlayEveryWare/eos_plugin_for_unity). The package is officially recommended by Epic and will quickly get your project set up if you don't care about fine tuning your implementation of the SDK. I also want to thank [Dylan Hunt's EOS-Unity project](https://gitlab.com/dylanh724/eos-unity) as it helped me understand the common init steps for EOS. I believe the project is deprecated now but still serves as a useful reference for getting set up with the SDK.
 
+### How should I use OpenEOS?
+
+You can use OpenEOS in either or both of the following ways:
+
+1. A neatly packaged container for the EOS SDK that you can interface with directly by importing the Epic.OnlineServices namespace into your custom setup code.
+2. A set of extensions that themselves can interact with the packaged SDK which provide helper functions to let you more quickly get around the SDK. Simply import the RobProductions.OpenEOS namespace and you can use the EOSCore and EOSAuth static libraries to quickly implement some common SDK steps: Initialization, Shutdown, Auth system login, Connect system login, translating EpicAccountId to ProductUserId, and acquiring the Exchange Code from EGS Launcher.
 
 ## Versioning
 
-Since this package is both a port of the EOS SDK and an extension 
+Since this package is both a port of the EOS SDK and an extension, there is the unique challenge of versioning since the package code builds on top of the included EOS SDK version. Since users likely care about which version of the SDK they are integrating and are compatible with, the Release Number will be laid out like this:
 
-1.15.5
+*X.X-Y.Y.Y* where X.X is the package code version and Y.Y.Y is the Epic Online Services SDK version. Example: 1.3-1.15.2 means package version 1.3 targeting EOS SDK version 1.15.2.
+
+**Current EOS SDK Target:** 1.15.5
+
+### Disclaimer
+
+Updates to the EOS SDK may happen out of sync with the project code, and vice versa. It's unlikely that the package would ever travel backwards in target EOS version, so expect that package updates will only ever update the SDK forwards. *Example: If you're looking for package version 1.3 targeting SDK 1.14 but version 1.3 already targeted 1.15.2, you're out of luck unless a specific branch or release is created.*
+
+## Usage
+
+As mentioned above, you could use this package to simply interface with the SDK directly or utilize some wrapper shortcuts provided by OpenEOS. Let's start with the first use case.
+
+### Accessing Epic Online Services SDK
+
+Once the package is installed, you simply need to import whatever EOS namespace you'd like to begin working with the SDK inside your own EOS Manager. This could be Epic.OnlineServices, Epic.OnlineServices.Auth, Epic.OnlineServices.Connect, etc. See [Epic's EOS documentation](https://dev.epicgames.com/docs/epic-online-services) for more info on how to use these services. The [C# getting started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started) is also helpful as it provides some setup steps for working with Unity. If you import this package, you can forgo the first few steps where you import the SDK and configure the DLLs.
+
+The [EOS SDK API](https://dev.epicgames.com/docs/api-ref) is helpful for viewing how the interfaces work and what parameters they expect. If you're new to the EOS SDK I'd recommend first understanding the full flow that Epic expects from your project. You can use [this doc page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/introduction-resources) to learn a bit more about it, though it's hard to find any solid steps without looking through examples. I will briefly summarize the expected flow you have to take within your EOS Manager here:
+
+1. Initialize the SDK (in Editor mode, this is a little more complicated as you have [dynamically load and unload](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started) the EOS Libraries)
+2. Acquire the PlatformInterface which acts as your EOS session and ensure that you call .tick() on some time interval
+3. Use Auth system to log in an Epic User (if you wish to provide that option)
+4. Use the Connect system to log in a generic user through some provider, or convert the Epic User into the generic Product User
+5. Use the stored PlatformInterface and user data whenever you need to interact with the SDK
+6. Shutdown the SDK on App exit and release the memory used by the PlatformInterface
+
+### EOSCore Layer
+
+If you'd like a slightly easier time performing common core SDK steps within your EOS Manager, you can import the RobProductions.OpenEOS namespace and use the helper functions provided by EOSCore to initialize and shutdown the SDK. All of the code contains summary comments so you can read about what each function does in your IDE.
+
+**EOSCore.Init()** will automatically initialize the SDK. It uses the custom EOSInitSet class for you to provide your init configuration, mainly the 5 secret IDs that can associate your app with the EOS service. You can find the secret IDs required for setup in your developer portal. Read more about the developer portal [here](https://dev.epicgames.com/docs/dev-portal/product-management). Additionally, Init() requires the project path to the OpenEOS installation. Assume we start at the root of the project and search from there; for example if you installed via the Package Manager remote method, provide something like *"Library/AssetCache/com.robproductions.openeos@someuniqueid"* as shown in your file browser. This field is only used in Editor mode so that EOSCore can locate the Plugins folder contained within the EOSSDK folder and dynamically load in EOS DLLs before running the main init steps. This is the recommended approach described in the [C# Getting Started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started). This allows you to completely shutdown the SDK at a later time without having to worry about the lifetime of the Unity Editor itself. As of 1.15, the documentation claims that this is the required method for initializing the SDK properly within the Unity Editor.
+
+With just those 2 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
+
+<img width = "800" src="Documentation~/DocAssets/EOSCoreExample.jpg">
+
+Remember to call .Tick() at least a few times per second on the provided PlatformInterface so that EOS can continue running. 
+
+**EOSCore.Shutdown()** will run all the necessary cleanup steps to shut down the SDK. It requires the generated PlatformInterface that was handed to you from Init() so that it can release the memory allocation for your session. Additionally, it dynamically unloads the libraries that were linked in Init() by using Bindings.Unhook. If you used Init() you must use Shutdown() at the end of your application lifecycle, typically in OnApplicationQuit or OnDestroy if you only have one scene.
+
+### EOSAuth Layer
+
+EOSAuth provides helpful shortcuts for working with EOS accounts and the user systems. There are 2 main login systems for EOS: Auth and Connect. 
+
+**EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSInitSet class with the Credentials filled out and LoginAuth() will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
+
+For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSAuth.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor so it is up to your EOS Manager to determine when to use this Login type.
+
+Note that in order to use the "Developer" login type to test your login system, you will need to run the DevAuthTool provided by the SDK [which you can download from your developer portal](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/services-quick-start#step-2---download-the-eos-sdk).
+
+<img width = "800" src="Documentation~/DocAssets/DevAuthToolScreen.jpg">
+
+Great, so you've got an EpicUserId. 
 
 ## Installation
 
@@ -67,7 +126,7 @@ For now, updates to the EOS SDK will happen manually and likely infrequently sin
 This open source project is free for all to suggest improvements, and I'm hoping that more contributors could help clean up the code and add further features as suggested by the community. These are the recommended steps to add your contribution:
 
 1. Fork the repository to your GitHub account
-2. Clone the code to the Assets folder in any Unity project (as long as it does not include OpenGraphGUI as a package)
+2. Clone the code to the Assets or local Packages folder in a testbed Unity project
 3. Create a new branch or work off of your own "working branch"
 4. When your changes are complete, submit a pull request to merge your code; ideally to the "working-branch" used to test changes before main
 5. If the PR is approved, aggregate changes will eventually be merged into main and a new release tag is created
@@ -78,12 +137,12 @@ Created by [RobProductions](https://twitter.com/RobProductions). RobProductions'
 
 ### Requirements
 
-- Tested with Unity 2020.3.26f1 and .NET 4.x, though it will likely work in earlier versions too. If support is confirmed for older versions I will gladly update the package JSON to improve compatibility.
+- Tested with Unity 2020.3.26f1 and .NET 4.x, though it will likely work in earlier versions of Unity too. If support is confirmed for older versions I will gladly update the package JSON to improve compatibility.
 
 ### Limitations
 
 - I mainly focused on developing this package for my own use cases which are geared towards PC and Mac deployment. As such, some steps of the SDK Initializaiton and Login process have been skipped and definitions for more advanced configurations are not yet available. These are relatively easy to update, so if you have need of more options in the EOSCore feel free to let me know.
-- Currently the enhancements are mainly limited to SDK initialization, shutdown, and account authorization. This is because EGS Self-publishing only opened up a few days ago at the time of writing, so I haven't had time to look through more of the important SDK features. Also, these are the steps that are most relevant for my use case which will be performed often from my own EOS Managers. Other parts of the SDK I need such as Achievements are relatively simple in comparison, just needing a ProductUserId and string ID, so I felt that no helper functions were necessary. In the future as I discover more use cases for the SDK I may try to branch out and add more wrappers for commonly-used features. 
+- Currently the enhancements are mainly limited to SDK initialization, shutdown, and account authorization. This is because EGS Self-publishing only opened up a few days ago at the time of writing, so I haven't had time to look through more of the important SDK features. Also, these are the steps that are most relevant for my use case which will be performed often from my own EOS Managers. Other parts of the SDK I need such as Achievements are relatively simple in comparison, just needing a ProductUserId and string ID, so I felt that no helper functions were necessary and I could implement them directly from my EOS Manager. In the future as I discover more use cases for the SDK I may try to branch out and add more wrappers for commonly-used features. 
 
 ### License
 
