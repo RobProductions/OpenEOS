@@ -37,7 +37,7 @@ namespace RobProductions.OpenEOS
 		/// to your provided loginCompleteDelegate. Just because this function returned true
 		/// it does NOT mean Login was actually successful, just that it successfully started.
 		/// </returns>
-		public static bool LoginAuth(PlatformInterface platformSession, EOSLoginSet loginSet, OnLoginCallback loginCompleteCallback)
+		public static bool LoginAuth(PlatformInterface platformSession, EOSLoginAuthSet authSet, OnLoginCallback loginCompleteCallback)
 		{
 			var authInterface = platformSession.GetAuthInterface();
 			if (authInterface == null)
@@ -50,12 +50,12 @@ namespace RobProductions.OpenEOS
 			{
 				Credentials = new Credentials()
 				{
-					Type = loginSet.credentialType,
-					Id = loginSet.credentialID,
-					Token = loginSet.credentialToken,
-					ExternalType = loginSet.credentialExternalType,
+					Type = authSet.credentialType,
+					Id = authSet.credentialID,
+					Token = authSet.credentialToken,
+					ExternalType = authSet.credentialExternalType,
 				},
-				ScopeFlags = loginSet.authScopeFlags,
+				ScopeFlags = authSet.authScopeFlags,
 
 			};
 
@@ -77,7 +77,7 @@ namespace RobProductions.OpenEOS
 		/// so that external credentials can also qualify for achievements and such.
 		/// You can use the EpicAccountId to generate a token that can be used for this Connect Login,
 		/// by using GetAuthInterface().CopyIdToken() and inputting the JsonWebToken contained within
-		/// to the "credentials" param used here.
+		/// to the "credentials" param in EOSLoginConnectSet used here.
 		/// <br></br><br></br>
 		/// Note: See the shortcut login actions provided in EOSAuth to more easily
 		/// translate your EpicAccountId into a usable ProductUserId. These additional
@@ -88,9 +88,6 @@ namespace RobProductions.OpenEOS
 		/// account and use this Connect call to link to their EOS Profile.
 		/// </summary>
 		/// <param name="platformSession">Generated platform given by EOSCore.Init</param>
-		/// <param name="credentials">Connect Credentials for the desired user.</param>
-		/// <param name="additionalLoginInfo">Additional account info that is only used on
-		/// certain non-Epic login types for Connect.</param>
 		/// <param name="loginCompleteCallback">Callback that will be run when Connect Login is complete.
 		/// Note that you must read the "result" to see if it was successful.
 		/// If you get an error such as FailureInvalidUser, you may need to additionally
@@ -98,8 +95,8 @@ namespace RobProductions.OpenEOS
 		/// in order to initialize the link between the desired credential and EOS.
 		/// </param>
 		/// <returns>True if Connect login successfully started, false if otherwise.</returns>
-		public static bool LoginConnect(PlatformInterface platformSession, Epic.OnlineServices.Connect.Credentials credentials,
-			Epic.OnlineServices.Connect.UserLoginInfo? additionalLoginInfo, Epic.OnlineServices.Connect.OnLoginCallback loginCompleteCallback)
+		public static bool LoginConnect(PlatformInterface platformSession, EOSLoginConnectSet connectSet,
+			Epic.OnlineServices.Connect.OnLoginCallback loginCompleteCallback)
 		{
 			var connectInterface = platformSession.GetConnectInterface();
 			if (connectInterface == null)
@@ -108,10 +105,16 @@ namespace RobProductions.OpenEOS
 				return false;
 			}
 
+			var credentials = new Epic.OnlineServices.Connect.Credentials()
+			{
+				Token = connectSet.credentialsToken,
+				Type = connectSet.credentialsType,
+			};
+
 			Epic.OnlineServices.Connect.LoginOptions options = new Epic.OnlineServices.Connect.LoginOptions()
 			{
 				Credentials = credentials,
-				UserLoginInfo = additionalLoginInfo,
+				UserLoginInfo = connectSet.additionalLoginInfo,
 			};
 			//Start the async Connect Login function
 			//EOS requires platform.Tick() to be called for this to complete.
@@ -277,13 +280,14 @@ namespace RobProductions.OpenEOS
 			}
 
 			//Use the Auth IDToken to sign in through Connect.Login
-			Epic.OnlineServices.Connect.Credentials credentials = new Epic.OnlineServices.Connect.Credentials()
+			var connectSet = new EOSLoginConnectSet()
 			{
-				Token = idToken.Value.JsonWebToken,
-				Type = ExternalCredentialType.EpicIdToken,
+				credentialsToken = idToken.Value.JsonWebToken,
+				credentialsType = ExternalCredentialType.EpicIdToken,
+				additionalLoginInfo = null,
 			};
 
-			return LoginConnect(platformSession, credentials, null, loginCompleteCallback);
+			return LoginConnect(platformSession, connectSet, loginCompleteCallback);
 		}
 
 		//COMMAND LINE HELPER
