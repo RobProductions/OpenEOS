@@ -7,14 +7,14 @@ using Epic.OnlineServices;
 namespace RobProductions.OpenEOS
 {
 	/// <summary>
-	/// Representation of a Login configuration for EOSCore.Login().
-	/// Pass this set into EOSCore.Login() to customize your login configuration.
+	/// Representation of an Auth System Login configuration for EOSCore.LoginAuth().
+	/// Pass this set into EOSCore.LoginAuth() to customize your login configuration.
 	/// <br></br><br></br>
 	/// It's recommended that you use an extra Auth layer in your EOS Manager
 	/// to create this set programmatically, as you may need to attempt
 	/// several authentication methods before login is successful.
 	/// </summary>
-	public class EOSLoginSet
+	public class EOSLoginAuthSet
 	{
 		/// <summary>
 		/// The type of login you want to perform.

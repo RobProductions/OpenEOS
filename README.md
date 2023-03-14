@@ -9,7 +9,7 @@ An open-source port of the [Epic Online Services (EOS) SDK](https://dev.epicgame
 
 OpenEOS offers 2 main services to your Unity project:
 
-1. A port of the relevant EOS SDK files, including C# and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of having to manage the SDK on a project-by-project basis in your Assets folder.
+1. A port of the relevant EOS SDK files, including the C# codebase and DLLs configured to work within the Editor and builds. This allows you to import the EOS SDK as a package instead of having to manage the SDK on a project-by-project basis in your Assets folder.
 2. A few helper extensions and shortcuts for commonly used Epic Online Services features, such as SDK Initialization and Account Management.
 
 ### OpenEOS... Why?
@@ -53,7 +53,7 @@ The [EOS SDK API](https://dev.epicgames.com/docs/api-ref) is helpful for viewing
 2. Acquire the PlatformInterface which acts as your EOS session and ensure that you call .tick() on some time interval
 3. Use Auth system to log in an Epic User (if you wish to provide that option)
 4. Use the Connect system to log in a generic user through some provider, or convert the Epic User into the generic Product User
-5. Use the stored PlatformInterface and user data whenever you need to interact with the SDK
+5. Use the stored PlatformInterface and user data whenever you need to interact with the SDK, for example unlocking Achievements or uploading statistics
 6. Shutdown the SDK on App exit and release the memory used by the PlatformInterface
 
 ### EOSCore Layer
@@ -64,7 +64,7 @@ If you'd like a slightly easier time performing common core SDK steps within you
 
 With just those 2 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
 
-<img width = "800" src="Documentation~/DocAssets/EOSCoreExample.jpg">
+<img width = "600" src="Documentation~/DocAssets/EOSCoreExample.jpg">
 
 Remember to call .Tick() at least a few times per second on the provided PlatformInterface so that EOS can continue running. 
 
@@ -74,7 +74,7 @@ Remember to call .Tick() at least a few times per second on the provided Platfor
 
 EOSAuth provides helpful shortcuts for working with EOS accounts and the user systems. There are 2 main login systems for EOS: Auth and Connect. 
 
-**EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSInitSet class with the Credentials filled out and LoginAuth() will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
+**EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSLoginAuthSet class with the Credentials filled out and LoginAuth() will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
 
 For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSAuth.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor so it is up to your EOS Manager to determine when to use this Login type.
 
@@ -82,7 +82,26 @@ Note that in order to use the "Developer" login type to test your login system, 
 
 <img width = "800" src="Documentation~/DocAssets/DevAuthToolScreen.jpg">
 
-Great, so you've got an EpicUserId. 
+Great, so you've got an EpicAccountId. Unfortunately, this only gets you so far as some of the SDK expects a reference to a more generic type of user called a Product User, which you must log in using the [Connect Interface](https://dev.epicgames.com/docs/game-services/eos-connect-interface). With the Connect system, you can either attempt to translate your Epic user (via EpicAccountId) or use a verified provider service to log your user in (via Google, Steam, Playstation, etc.)
+
+**EOSAuth.LoginConnect()** is a wrapper for the Connect login process. It takes the Credentials of user and some optional additional information in the custom EOSLoginConnectSet data container, and a callback that you provide which returns to you the ResultCode of the async operation. With an external provider, you can fill out the expected credential type and include the relevant information, but for an Epic user you'll want to use the EpicIdToken type and then use Auth.CopyIdTokenOptions() to retrieve the idToken of your user before placing it into the credentials.
+
+Since this translation seems like a pretty common process and is somewhat complicated, I've included a few encapsulating functions that can internally handle this conversion from EpicAccountId to ProductUserId without needing to call EOSAuth.LoginConnect() yourself. 
+
+**EOSAuth.LoginEpicAccountToProductUser()** will attempt to generate the idToken when given an EpicAccountId and automatically call EOSAuth.LoginConnect(), handing over your provided callback to get the result. There is one issue with this approach though, and it's that the operation could fail due to the Connect user not existing in the EOS service. Since this only attempts to log in, the link will between the Epic User and the Product User may not have been made yet. To learn how to fix this, you can check [this resource](https://dev.epicgames.com/docs/en-US/api-ref/functions/eos-connect-create-user) or use the following helper function.
+
+**EOSAuth.LoginEpicAccountToProductUserWithCreate()** will do the same as the previous function, but with the added step of creating the Connect user if it has not been linked yet. It will return a result to either the Login callback or the CreateUser callback that you provide. Now, when you get a result from either one of these, you can check for success and grab the ProductUserId that was either created or logged in as a result of the operations.
+
+**EOSAuth.LoginEpicAccountToProductUserWithCreate()** has an override which acts as the final abstraction for this conversion process. Instead of providing 2 separate callbacks, you provide one custom callback called CreateOrLoginPUIDCallback which returns the result from either the CreateUser op or the Connect Login op 
+
+With the provided helper functions your complete login flow could look something like this if you want simple Epic User verification:
+
+1. Run the EOSAuth.LoginAuth() with Persistent Auth type and provide a callback to check the result
+2. If Persistent Auth failed, run EOSAuth.LoginAuth() again in the previous callback with Account Portal instead
+3. If Account Portal was successful, run EOSAuth.LoginEpicAccountToProductUserWithCreate() and provide a callback that stores the resulting ProductUserId
+4. Now you have all the user identification necessary to access a vast majority of the SDK functionality
+
+Hopefully this example demonstrates how OpenEOS lets you customize your Auth flow while minimizing the amount of complicated manual conversions needed to complete the Authorization process.
 
 ## Installation
 
@@ -123,7 +142,7 @@ For now, updates to the EOS SDK will happen manually and likely infrequently sin
 
 ### How to Contribute
 
-This open source project is free for all to suggest improvements, and I'm hoping that more contributors could help clean up the code and add further features as suggested by the community. These are the recommended steps to add your contribution:
+This open source project is free for all to suggest improvements, and I'm hoping that more contributors could help extend the shortcut abstractions and add further features as suggested by the community. These are the recommended steps to add your contribution:
 
 1. Fork the repository to your GitHub account
 2. Clone the code to the Assets or local Packages folder in a testbed Unity project
