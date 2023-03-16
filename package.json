@@ -1,6 +1,6 @@
 {
   "name": "com.robproductions.openeos",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "displayName": "OpenEOS",
   "description": "A lightweight & open-source port of the Epic Online Services (EOS) SDK in Unity Package format, with minor enhancements to provide a smoother integration between Unity and EOS.",
   "unity": "2020.3",
