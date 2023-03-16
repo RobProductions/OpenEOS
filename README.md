@@ -31,13 +31,15 @@ You can use OpenEOS in either or both of the following ways:
 
 Since this package is both a port of the EOS SDK and an extension, there is the unique challenge of versioning since the package code builds on top of the included EOS SDK version. Since users likely care about which version of the SDK they are integrating and are compatible with, the Release Number will be laid out like this:
 
-*X.X-Y.Y.Y* where X.X is the package code version and Y.Y.Y is the Epic Online Services SDK version. Example: 1.3-1.15.2 means package version 1.3 targeting EOS SDK version 1.15.2.
+*X.X.X-Y.Y.Y* where X.X.X is the package code version and Y.Y.Y is the Epic Online Services SDK version. Example: 1.3.0-1.15.2 means package version 1.3.0 targeting EOS SDK version 1.15.2.
+
+Unfortunately, since Unity [enforces the SemVer system in the package.json](https://docs.unity3d.com/Manual/upm-semver.html), the scheme laid out above will only be viewable from Github itself, so use the release tags as a reference for what code version maps to which SDK version. Within the package manager itself, you will only see X.X.X, so it's up to you to know how that corresponds to the EOS SDK version.
 
 **Current EOS SDK Target:** 1.15.5
 
 ### Disclaimer
 
-Updates to the EOS SDK may happen out of sync with the project code, and vice versa. It's unlikely that the package would ever travel backwards in target EOS version, so expect that package updates will only ever update the SDK forwards. *Example: If you're looking for package version 1.3 targeting SDK 1.14 but version 1.3 already targeted 1.15.2, you're out of luck unless a specific branch or release is created.*
+Updates to the EOS SDK itself will constitute a new package code version so that the package.json can reflect a different version for the change. However, it's unlikely that the package would ever travel backwards in target EOS version, so expect that package updates will only ever update the SDK forwards. *Example: If you're looking for package version 1.3.0 targeting SDK 1.14 but version 1.2.0 already targeted 1.15.2, you're out of luck unless a specific branch or release is created.* An exception can be made in the future if there is demand for it.
 
 ## Usage
 
