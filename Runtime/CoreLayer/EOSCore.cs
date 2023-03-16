@@ -59,23 +59,28 @@ namespace RobProductions.OpenEOS
 				var dirInfo = new DirectoryInfo(pathToOpenEOS);
 				if(!dirInfo.Exists)
 				{
-					LogEOS("Warning: pathToOpenEOS does not exist! Ensure that it leads to the installed package directory.");
-				}
-				else if(dirInfo.Name != "OpenEOS")
-				{
-					LogEOS("Warning: Provided pathToOpenEOS did not end in OpenEOS! Ensure that it leads to the installed package.");
+					LogEOS("Warning: pathToOpenEOS does not exist! Ensure that it leads to the installed OpenEOS package directory.");
 				}
 				else
 				{
 					var finalPathToPlugins = Path.Combine(pathToOpenEOS, "Runtime/EOSSDK/SDK/Plugins/");
-					try
+					var pluginsInfo = new DirectoryInfo(finalPathToPlugins);
+					if(!pluginsInfo.Exists)
 					{
-						LoadEditorLibraries(finalPathToPlugins);
+						LogEOS("Warning: Path to SDK/Plugins does not exist! Ensure that pathToOpenEOS leads to the installed OpenEOS package directory "
+							+ "and that Runtime/EOSSDK/SDK exists within the directory.");
 					}
-					catch(Exception e)
+					else
 					{
-						LogEOS(e.Message);
-						LogEOS(e.StackTrace);
+						try
+						{
+							LoadEditorLibraries(finalPathToPlugins);
+						}
+						catch (Exception e)
+						{
+							LogEOS(e.Message);
+							LogEOS(e.StackTrace);
+						}
 					}
 				}
 			}
