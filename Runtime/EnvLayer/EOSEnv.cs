@@ -128,6 +128,21 @@ namespace RobProductions.OpenEOS
 		{
 			return System.Environment.GetCommandLineArgs();
 		}
+
+		/// <summary>
+		/// Debug print all arguments passed into the program.
+		/// </summary>
+		/// <returns></returns>
+		public static void DebugPrintAllCommandLineArgs()
+		{
+			var allArgs = GetAllCommandLineArgs();
+			string result = "All arguments: ";
+			for(int i = 0; i < allArgs.Length; i++)
+			{
+				result += allArgs[i] + " ";
+			}
+			EOSCore.LogEOS(result);
+		}
 	}
 
 }
