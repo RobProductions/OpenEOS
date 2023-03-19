@@ -181,7 +181,7 @@ OpenEOS should also work as a part of your Assets/ directory if you'd like to cu
 
 If you installed via Git, you may want to make sure that you've enabled .csproj for "Git Packages" in *Edit->Preferences->External Tools*
 
-<img width = "700" src="Documentation~/DocAssets/GitPackagesSetting.jpg">
+<img width = "500" src="Documentation~/DocAssets/GitPackagesSetting.jpg">
 
 Now you'll be able to see summary comments including descriptions on return values, input parameters, and functions straight from your IDE. This is especially helpful because it lets you view Epic's summary comments within the EOS SDK itself in addition to the enhancements provided by OpenEOS. Feel free to poke around the code to understand what it's doing behind the scenes :)
 
