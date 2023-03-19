@@ -1,5 +1,5 @@
 # OpenEOS for Unity
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/RobProductions/OpenEOS?logo=github)
+[![openupm](https://img.shields.io/npm/v/com.robproductions.openeos?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.robproductions.openeos/) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/RobProductions/OpenEOS?logo=github)
 
 An open-source port of the [Epic Online Services (EOS) SDK](https://dev.epicgames.com/docs/epic-online-services) in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
 
