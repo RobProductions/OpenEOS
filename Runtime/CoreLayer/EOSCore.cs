@@ -12,11 +12,32 @@ namespace RobProductions.OpenEOS
 {
 	public static class EOSCore
 	{
+		//DEFS
+
+		/// <summary>
+		/// Represents the type of logic used for finding the OpenEOS package
+		/// installation path. Use GitRemotePackage if you installed via
+		/// Git and Local if you embedded the package.
+		/// Use CustomPath to provide your own string.
+		/// </summary>
+		public enum InstallationPathType
+		{
+			GitRemotePackage = 0,
+			LocalPackge = 1,
+			CustomPath = 2
+		}
+
+		private const string eosPackageName = "com.robproductions.openeos";
+
+		//TRACK
+
 		/// <summary>
 		/// Track whether or not you want EOSCore to log its own warnings.
 		/// Use SetLogWarnings to change this.
 		/// </summary>
 		private static bool logWarnings = true;
+
+		//CORE FUNCTIONS
 
 		/// <summary>
 		/// Quick Initialization setup for EOS SDK that automatically
@@ -36,13 +57,16 @@ namespace RobProductions.OpenEOS
 		/// </summary>
 		/// <param name="initSet">Create after importing RobProductions.OpenEOS namespace and provide
 		/// this object to customize the configuration used by EOSInit.</param>
-		/// <param name="pathToOpenEOS">The path to the OpenEOS installation directory, typically
+		/// <param name="openEOSPathType">Designate the package installation type so that Init() can
+		/// find the path to your package instance. Only needed in Editor mode for loading libraries.</param>
+		/// <param name="customPathToOpenEOS">Custom override path to the OpenEOS installation directory, typically
 		/// Library/PackageCache/com.robproductions.openeos@someindex if you installed via Package Manager,
 		/// Packages/com.robproductions.openeos if you embedded the package,
-		/// Assets/OpenEOS if you placed it directly into your project.</param>
+		/// Assets/OpenEOS if you placed it directly into your project. Only needed if you use
+		/// custom installation path type.</param>
 		/// <returns>The generated PlatformInterface state if successful and null if
 		/// unsuccessful for any reason.</returns>
-		public static PlatformInterface Init(EOSInitSet initSet, string pathToOpenEOS)
+		public static PlatformInterface Init(EOSInitSet initSet, InstallationPathType openEOSPathType, string customPathToOpenEOS = "")
 		{
 			//According to Epic's EOS documention,
 			//EOS libraries should be dynamically loaded and unloaded in the Editor.
@@ -50,24 +74,80 @@ namespace RobProductions.OpenEOS
 			//https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started
 
 #if UNITY_EDITOR
-			if (pathToOpenEOS == "")
+
+			var finalPathToOpenEOS = customPathToOpenEOS;
+
+			if (openEOSPathType == InstallationPathType.LocalPackge)
 			{
-				LogEOS("Warning: Editor Mode detected but pathToOpenEOS is empty!");
+				//This should be a constant path in Packages
+				finalPathToOpenEOS = Path.Combine("Packages", eosPackageName);
+				var localInfo = new DirectoryInfo(finalPathToOpenEOS);
+				if(!localInfo.Exists)
+				{
+					finalPathToOpenEOS = Path.Combine("Packages", eosPackageName + "-main");
+					localInfo = new DirectoryInfo(finalPathToOpenEOS);
+					if(!localInfo.Exists)
+					{
+						LogEOS("Warning: Installation Type set to Local Package but " + finalPathToOpenEOS + " did not exist! "
+							+ "Please change installation type or use custom path option.");
+					}
+				}
+			}
+			else if (openEOSPathType == InstallationPathType.GitRemotePackage)
+			{
+				//This is a path to the PackageCache but with some arbitrary index that Unity assigns,
+				//so we need to search each directory and trim off the @ sign
+				var pathToLibraryCache = "Library/PackageCache/";
+				try
+				{
+					var directoryList = Directory.GetDirectories(pathToLibraryCache);
+					
+					bool foundPackage = false;
+					foreach (string subDir in directoryList)
+					{
+						var subDirLastFolder = new DirectoryInfo(subDir).Name;
+						var subDirSplit = subDirLastFolder.Split(new[] { '@' }, 2);
+						if(subDirSplit.Length > 0)
+						{
+							if (subDirSplit[0] == eosPackageName)
+							{
+								foundPackage = true;
+								finalPathToOpenEOS = subDir;
+								break;
+							}
+						}
+					}
+					if(!foundPackage)
+					{
+						LogEOS("Warning: Could not find OpenEOS in Git Remote package location (" + pathToLibraryCache + "). "
+							+ "Ensure that OpenEOS is installed there or use a custom path option.");
+					}
+				}
+				catch(UnauthorizedAccessException e)
+				{
+					LogEOS("Error reading Remote Package directories: " + e.ToString());
+				}
+			}
+
+			if (finalPathToOpenEOS == "")
+			{
+				LogEOS("Warning: Editor Mode detected but the path to OpenEOS is empty! Please provide an installation path.");
 			}
 			else
 			{
-				var dirInfo = new DirectoryInfo(pathToOpenEOS);
+				var dirInfo = new DirectoryInfo(finalPathToOpenEOS);
 				if(!dirInfo.Exists)
 				{
-					LogEOS("Warning: pathToOpenEOS does not exist! Ensure that it leads to the installed OpenEOS package directory.");
+					LogEOS("Warning: Final path to OpenEOS (" + finalPathToOpenEOS + ") does not exist! "
+						+ "Ensure that it leads to the installed OpenEOS package directory.");
 				}
 				else
 				{
-					var finalPathToPlugins = Path.Combine(pathToOpenEOS, "Runtime/EOSSDK/SDK/Plugins/");
+					var finalPathToPlugins = Path.Combine(finalPathToOpenEOS, "Runtime/EOSSDK/SDK/Plugins/");
 					var pluginsInfo = new DirectoryInfo(finalPathToPlugins);
 					if(!pluginsInfo.Exists)
 					{
-						LogEOS("Warning: Path to SDK/Plugins does not exist! Ensure that pathToOpenEOS leads to the installed OpenEOS package directory "
+						LogEOS("Warning: Path to SDK/Plugins does not exist! Ensure that the path to OpenEOS leads to the installed OpenEOS package directory "
 							+ "and that Runtime/EOSSDK/SDK exists within the directory.");
 					}
 					else
@@ -98,6 +178,7 @@ namespace RobProductions.OpenEOS
 			if(result != Result.Success && result != Result.AlreadyConfigured)
 			{
 				//SDK Initialization failure
+				LogEOS("Error: PlatformInterface.Initialize() failed! ResultCode: " + result.ToString());
 				return null;
 			}
 
@@ -107,7 +188,7 @@ namespace RobProductions.OpenEOS
 			clientCredentials.ClientSecret = initSet.clientSecret;
 
 			Utf8String encryptionKey = null;
-			if(initSet.encryptionKey != "")
+			if(initSet.encryptionKey != null && initSet.encryptionKey != "")
 			{
 				encryptionKey = initSet.encryptionKey;
 			}

@@ -1,4 +1,4 @@
-# OpenEOS
+# OpenEOS for Unity
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/RobProductions/OpenEOS?logo=github)
 
 An open-source port of the [Epic Online Services (EOS) SDK](https://dev.epicgames.com/docs/epic-online-services) in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
@@ -62,11 +62,33 @@ The [EOS SDK API](https://dev.epicgames.com/docs/api-ref) is helpful for viewing
 
 If you'd like a slightly easier time performing common core SDK steps within your EOS Manager, you can import the RobProductions.OpenEOS namespace and use the helper functions provided by EOSCore to initialize and shutdown the SDK. All of the code contains summary comments so you can read about what each function does in your IDE.
 
-**EOSCore.Init()** will automatically initialize the SDK. It uses the custom EOSInitSet class for you to provide your init configuration, mainly the 5 secret IDs that can associate your app with the EOS service. You can find the secret IDs required for setup in your developer portal. Read more about the developer portal [here](https://dev.epicgames.com/docs/dev-portal/product-management). Additionally, Init() requires the project path to the OpenEOS installation. Assume we start at the root of the project and search from there; for example if you installed via the Package Manager remote method, provide something like *"Library/AssetCache/com.robproductions.openeos@someuniqueid"* as shown in your file browser. This field is only used in Editor mode so that EOSCore can locate the Plugins folder contained within the EOSSDK folder and dynamically load in EOS DLLs before running the main init steps. This is the recommended approach described in the [C# Getting Started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started). This allows you to completely shutdown the SDK at a later time without having to worry about the lifetime of the Unity Editor itself. As of 1.15, the documentation claims that this is the required method for initializing the SDK properly within the Unity Editor.
+**EOSCore.Init()** will automatically initialize the SDK. It uses the custom EOSInitSet class for you to provide your init configuration, mainly the 5 secret IDs that can associate your app with the EOS service. You can find the secret IDs required for setup in your developer portal. Read more about the developer portal [here](https://dev.epicgames.com/docs/dev-portal/product-management). Additionally, Init() requires the project path to the OpenEOS installation. With the new *"InstallationPathType"* enum, you can have Init automatically find your installation path by telling it how you installed OpenEOS. 
 
-With just those 2 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
+Alternatively, you could use the custom path type and provide the *customPathToOpenEOS* to manually specificy your installation location. For this method, assume we start at the root of the project and search from there; for example if you installed via the Package Manager remote method, provide something like *"Library/AssetCache/com.robproductions.openeos@someuniqueid"* as shown in your file browser. 
 
-<img width = "600" src="Documentation~/DocAssets/EOSCoreExample.jpg">
+The installation path parameters are only used in Editor mode so that EOSCore can locate the Plugins folder contained within the EOSSDK folder and dynamically load in EOS DLLs before running the main init steps. This is the recommended approach described in the [C# Getting Started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started). This allows you to completely shutdown the SDK even in Editor at a later time without having to worry about the lifetime of the Unity Editor itself. As of 1.15, the documentation claims that this is the required method for initializing the SDK properly within the Unity Editor.
+
+With just those 2-3 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
+
+```cs
+var initSet = new EOSInitSet()
+{
+	productName = "Test Game",
+	productVersion = "V1.1",
+	clientID = "------------------",
+	clientSecret = "-----------------",
+	productID = "--------------------",
+	sandboxID = "--------------------",
+	deploymentID = "----------------",
+};
+
+platform = EOSCore.Init(initSet, EOSCore.InstallationPathType.CustomPath, "Assets/MyPackages/OpenEOS/");
+
+if(platform != null)
+{
+	initialized = true;
+}
+```
 
 Remember to call .Tick() at least a few times per second on the provided PlatformInterface so that EOS can continue running. 
 
@@ -145,7 +167,7 @@ Check [this link](https://openupm.com/docs/getting-started.html#installing-a-upm
 
 **Local package installation**
 
-Feel free to download the project as .zip and place it somewhere on your local drive. Then use the *"Add package from disk"* option in the Package Manager to add this local package instead of the remote installation.
+Feel free to download the project as .zip and place it somewhere on your local drive. Then use the *"Add package from disk"* option in the Package Manager to add this local package instead of the remote installation. Ensure the resulting folder in your project's Package directory is com.robproductions.openeos or com.robproductions.openeos-main so that Init can discover the installation directory correctly.
 
 **Installation failed or Unity not supported?**
 
