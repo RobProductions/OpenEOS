@@ -25,7 +25,7 @@ If you're looking for a more robust solution that comes with its own manager, I 
 You can use OpenEOS in either or both of the following ways:
 
 1. A neatly packaged container for the EOS SDK that you can interface with directly by importing the Epic.OnlineServices namespace into your custom setup code.
-2. A set of extensions that themselves can interact with the packaged SDK which provide helper functions to let you more quickly get around the SDK. Simply import the RobProductions.OpenEOS namespace and you can use the EOSCore and EOSAuth static libraries to quickly implement some common SDK steps: Initialization, Shutdown, Auth system login, Connect system login, translating EpicAccountId to ProductUserId, and acquiring the Exchange Code from EGS Launcher.
+2. A set of extensions that themselves can interact with the packaged SDK which provide helper functions to let you more quickly get around the SDK. Simply import the RobProductions.OpenEOS namespace and you can use the *EOSCore*, *EOSAuth*, and *EOSEnv* static libraries to quickly implement some common SDK steps: Initialization, Shutdown, Auth system login, Connect system login, translating EpicAccountId to ProductUserId, and acquiring command line arguments passed from the EGS Launcher.
 
 ## Versioning
 
