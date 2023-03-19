@@ -155,6 +155,14 @@ If installation fails due to version requirements, you may be able force OpenEOS
 
 OpenEOS should also work as a part of your Assets/ directory if you'd like to customize it for your specific project without having to deal with the package system. Simply download the project as a .zip and place the contents anywhere in your Assets folder, as long as they are self-contained so that the Assembly Definition doesn't confuse itself with your other files. Note: when specifying the OpenEOS installation path in EOSCore.Init, you must now use Assets/path_to_openEOS.
 
+### Want more details about the API?
+
+If you installed via Git, you may want to make sure that you've enabled .csproj for "Git Packages" in *Edit->Preferences->External Tools*
+
+<img width = "700" src="Documentation~/DocAssets/GitPackagesSetting.jpg">
+
+Now you'll be able to see summary comments including descriptions on return values, input parameters, and functions straight from your IDE. This is especially helpful because it lets you view Epic's summary comments within the EOS SDK itself in addition to the enhancements provided by OpenEOS. Feel free to poke around the code to understand what it's doing behind the scenes :)
+
 ## Updates & Contribution
 
 For now, updates to the EOS SDK will happen manually and likely infrequently since I personally don't always need the latest version for my projects. In the future it would be great to have some automated batch process that places the SDK files correctly and renames the DLL holder to "Plugins" etc. so that can be something to improve in future releases.
