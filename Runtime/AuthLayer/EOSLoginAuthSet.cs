@@ -26,14 +26,16 @@ namespace RobProductions.OpenEOS
 		/// <summary>
 		/// The ID of the login credential. Will differ based on credentialType,
 		/// could be a username or domain of dev user (localhost:port).
+		/// Note: Some login types require null here instead of empty string.
 		/// </summary>
-		public string credentialID = "";
+		public string credentialID = null;
 
 		/// <summary>
 		/// The token/secret used to log in this user. Will differ based on credentialType.
 		/// Could be dev username, continuance token, or exchange token passed from console, etc.
+		/// Note: Some login types require null here instead of empty string.
 		/// </summary>
-		public string credentialToken = "";
+		public string credentialToken = null;
 
 		/// <summary>
 		/// Used in the ExternalAuth credential type and ignored for any other type.
@@ -43,7 +45,9 @@ namespace RobProductions.OpenEOS
 
 		/// <summary>
 		/// Permissions requested for this login session.
-		/// Match the request to the feature set intended with your Product.
+		/// Match the request to the feature set you enabled in your
+		/// client policy your app is linked to in the dev portal. 
+		/// If you don't, you'll get an error.
 		/// </summary>
 		public AuthScopeFlags authScopeFlags = AuthScopeFlags.BasicProfile | AuthScopeFlags.FriendsList | AuthScopeFlags.Presence;
 	}
