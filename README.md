@@ -1,4 +1,4 @@
-# OpenEOS
+# OpenEOS for Unity
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/RobProductions/OpenEOS?logo=github)
 
 An open-source port of the [Epic Online Services (EOS) SDK](https://dev.epicgames.com/docs/epic-online-services) in Unity Package format, with minor enhancements to provide a clean integration between EGS and Unity.
@@ -62,13 +62,37 @@ The [EOS SDK API](https://dev.epicgames.com/docs/api-ref) is helpful for viewing
 
 If you'd like a slightly easier time performing common core SDK steps within your EOS Manager, you can import the RobProductions.OpenEOS namespace and use the helper functions provided by EOSCore to initialize and shutdown the SDK. All of the code contains summary comments so you can read about what each function does in your IDE.
 
-**EOSCore.Init()** will automatically initialize the SDK. It uses the custom EOSInitSet class for you to provide your init configuration, mainly the 5 secret IDs that can associate your app with the EOS service. You can find the secret IDs required for setup in your developer portal. Read more about the developer portal [here](https://dev.epicgames.com/docs/dev-portal/product-management). Additionally, Init() requires the project path to the OpenEOS installation. Assume we start at the root of the project and search from there; for example if you installed via the Package Manager remote method, provide something like *"Library/AssetCache/com.robproductions.openeos@someuniqueid"* as shown in your file browser. This field is only used in Editor mode so that EOSCore can locate the Plugins folder contained within the EOSSDK folder and dynamically load in EOS DLLs before running the main init steps. This is the recommended approach described in the [C# Getting Started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started). This allows you to completely shutdown the SDK at a later time without having to worry about the lifetime of the Unity Editor itself. As of 1.15, the documentation claims that this is the required method for initializing the SDK properly within the Unity Editor.
+**EOSCore.Init()** will automatically initialize the SDK. It uses the custom EOSInitSet class for you to provide your init configuration, mainly the 5 secret IDs that can associate your app with the EOS service. You can find the secret IDs required for setup in your developer portal. Read more about the developer portal [here](https://dev.epicgames.com/docs/dev-portal/product-management). Additionally, Init() requires the project path to the OpenEOS installation. With the new *"InstallationPathType"* enum, you can have Init automatically find your installation path by telling it how you installed OpenEOS. 
 
-With just those 2 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
+Alternatively, you could use the custom path type and provide the *customPathToOpenEOS* to manually specificy your installation location. For this method, assume we start at the root of the project and search from there; for example if you installed via the Package Manager remote method, provide something like *"Library/AssetCache/com.robproductions.openeos@someuniqueid"* as shown in your file browser. 
 
-<img width = "600" src="Documentation~/DocAssets/EOSCoreExample.jpg">
+The installation path parameters are only used in Editor mode so that EOSCore can locate the Plugins folder contained within the EOSSDK folder and dynamically load in EOS DLLs before running the main init steps. This is the recommended approach described in the [C# Getting Started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started). This allows you to completely shutdown the SDK even in Editor at a later time without having to worry about the lifetime of the Unity Editor itself. As of 1.15, the documentation claims that this is the required method for initializing the SDK properly within the Unity Editor.
+
+With just those 2-3 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
+
+```cs
+var initSet = new EOSInitSet()
+{
+	productName = "Test Game",
+	productVersion = "V1.1",
+	clientID = "------------------",
+	clientSecret = "-----------------",
+	productID = "--------------------",
+	sandboxID = "--------------------",
+	deploymentID = "----------------",
+};
+
+platform = EOSCore.Init(initSet, EOSCore.InstallationPathType.CustomPath, "Assets/MyPackages/OpenEOS/");
+
+if(platform != null)
+{
+	initialized = true;
+}
+```
 
 Remember to call .Tick() at least a few times per second on the provided PlatformInterface so that EOS can continue running. 
+
+In order to determine which SandboxID and DeploymentID you should use, you may be able to use **EOSEnv.GetSandboxID()** to grab a command line parameter which is passed into your app by the Epic Games Launcher. See below for more details on EOSEnv. As per [Epic's testing guide](https://dev.epicgames.com/docs/en-US/epic-games-store/testing-guide), they recommend to use this method to determine your initialization so that you can use the same build on Dev which is eventually pushed to Live. When a user launches in Dev, Stage, or Live sandbox, you will you be able to detect that version and change your EOSInit set. However it is up to you to test this and add in fallback logic should this or if a user attempts to run your app outside of the EGS Launcher.
 
 **EOSCore.Shutdown()** will run all the necessary cleanup steps to shut down the SDK. It requires the generated PlatformInterface that was handed to you from Init() so that it can release the memory allocation for your session. Additionally, it dynamically unloads the libraries that were linked in Init() by using Bindings.Unhook. If you used Init() you must use Shutdown() at the end of your application lifecycle, typically in OnApplicationQuit or OnDestroy if you only have one scene.
 
@@ -78,7 +102,7 @@ EOSAuth provides helpful shortcuts for working with EOS accounts and the user sy
 
 **EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSLoginAuthSet class with the Credentials filled out and LoginAuth() will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
 
-For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSAuth.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor so it is up to your EOS Manager to determine when to use this Login type.
+For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSEnv.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor so it is up to your EOS Manager to determine when to use this Login type.
 
 Note that in order to use the "Developer" login type to test your login system, you will need to run the DevAuthTool provided by the SDK [which you can download from your developer portal](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/services-quick-start#step-2---download-the-eos-sdk).
 
@@ -105,6 +129,21 @@ With the provided helper functions your complete login flow could look something
 
 Hopefully this example demonstrates how OpenEOS lets you customize your Auth flow while minimizing the amount of complicated manual conversions needed to complete the Authorization process.
 
+### EOSEnv Layer
+
+EOSEnv provides some utilities for getting values from the command line, which the EGS Launcher utilizes to tell you information about the running environment.
+
+**EOSEnv.GetAllCommandLineArgs()** will help you debug all of the parameters passed into your app.
+
+**EOSEnv.GetCommandLineArgValue()** returns the value of the parameter when given a name. Epic formats their arguments like -NAME=VALUE, so provide the NAME here to get back the value which is trimmed out internally.
+
+Here are some automated value getters which you might find helpful:
+
+- **GetExchangeCodeToken()** provides the password token for the ExchangeCode Auth login type.
+- **GetSandboxID()** provides the ID of the running sandbox. When you give a tester a key to play your game on EGS, the Sandbox type you generated the key from will determine which build they are granted. For example, they can run the "Stage" version from EGS in addition to "Dev" or Live. When this happens, the version they click on in the launcher will determine the SandboxID passed into this argument. Your app may then grab this value and use it for Initialization so that the same build can be used across any sandbox. i.e. upload to Dev sandbox and push the same build to Stage.
+
+Do note that any of these tokens could be missing for any reason and OpenEOS will print a warning in that case.
+
 ## Installation
 
 ### Recommended Installation
@@ -128,7 +167,7 @@ Check [this link](https://openupm.com/docs/getting-started.html#installing-a-upm
 
 **Local package installation**
 
-Feel free to download the project as .zip and place it somewhere on your local drive. Then use the *"Add package from disk"* option in the Package Manager to add this local package instead of the remote installation.
+Feel free to download the project as .zip and place it somewhere on your local drive. Then use the *"Add package from disk"* option in the Package Manager to add this local package instead of the remote installation. Ensure the resulting folder in your project's Package directory is com.robproductions.openeos or com.robproductions.openeos-main so that Init can discover the installation directory correctly.
 
 **Installation failed or Unity not supported?**
 
@@ -137,6 +176,14 @@ If installation fails due to version requirements, you may be able force OpenEOS
 **Assets path installation**
 
 OpenEOS should also work as a part of your Assets/ directory if you'd like to customize it for your specific project without having to deal with the package system. Simply download the project as a .zip and place the contents anywhere in your Assets folder, as long as they are self-contained so that the Assembly Definition doesn't confuse itself with your other files. Note: when specifying the OpenEOS installation path in EOSCore.Init, you must now use Assets/path_to_openEOS.
+
+### Want more details about the API?
+
+If you installed via Git, you may want to make sure that you've enabled .csproj for "Git Packages" in *Edit->Preferences->External Tools*
+
+<img width = "700" src="Documentation~/DocAssets/GitPackagesSetting.jpg">
+
+Now you'll be able to see summary comments including descriptions on return values, input parameters, and functions straight from your IDE. This is especially helpful because it lets you view Epic's summary comments within the EOS SDK itself in addition to the enhancements provided by OpenEOS. Feel free to poke around the code to understand what it's doing behind the scenes :)
 
 ## Updates & Contribution
 
@@ -162,7 +209,8 @@ Created by [RobProductions](https://twitter.com/RobProductions). RobProductions'
 
 ### Limitations
 
-- I mainly focused on developing this package for my own use cases which are geared towards PC and Mac deployment. As such, some steps of the SDK Initializaiton and Login process have been skipped and definitions for more advanced configurations are not yet available. These are relatively easy to update, so if you have need of more options in the EOSCore feel free to let me know.
+- I mainly focused on developing this package for my own use cases which are geared towards PC and Mac deployment. As such, the SDK DLLs are only configured for Windows (32-bit and 64-bit), Mac, and Linux. Mobile platforms such as iOS and Android are not supported currently as I don't have those modules installed in my testing project. DLL conflicts also forced me to remove those libraries for now. If support was confirmed in the future, the DLLs for iOS and Android could be configured correctly and might work with the rest of this project.
+- Due to my own limited use cases for this package, some steps of the SDK Initialization and Login process are simplified and definitions for more advanced configurations are not yet available. These are relatively easy to update, so if you have need of more options in the EOSCore feel free to let me know.
 - Currently the enhancements are mainly limited to SDK initialization, shutdown, and account authorization. This is because EGS Self-publishing only opened up a few days ago at the time of writing, so I haven't had time to look through more of the important SDK features. Also, these are the steps that are most relevant for my use case which will be performed often from my own EOS Managers. Other parts of the SDK I need such as Achievements are relatively simple in comparison, just needing a ProductUserId and string ID, so I felt that no helper functions were necessary and I could implement them directly from my EOS Manager. In the future as I discover more use cases for the SDK I may try to branch out and add more wrappers for commonly-used features. 
 
 ### License
