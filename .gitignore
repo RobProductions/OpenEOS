@@ -59,3 +59,7 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# For EOS Update
+Tools/EOSUpdate.zip
+Tools/EOSUpdateExtracted
+

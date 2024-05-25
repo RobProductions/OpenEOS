@@ -35,7 +35,7 @@ Since this package is both a port of the EOS SDK and an extension, there is the 
 
 Unfortunately, since Unity [enforces the SemVer system in the package.json](https://docs.unity3d.com/Manual/upm-semver.html), the scheme laid out above will only be viewable from Github itself, so use the release tags as a reference for what code version maps to which SDK version. Within the package manager itself, you will only see X.X.X, so it's up to you to know how that corresponds to the EOS SDK version.
 
-**Current EOS SDK Target:** 1.15.5
+**Current EOS SDK Target:** 1.16.1
 
 ### Disclaimer
 
