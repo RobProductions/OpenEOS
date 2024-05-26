@@ -102,9 +102,9 @@ EOSAuth provides helpful shortcuts for working with EOS accounts and the user sy
 
 **EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSLoginAuthSet class with the Credentials filled out and LoginAuth() will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
 
-For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSEnv.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor so it is up to your EOS Manager to determine when to use this Login type.
+For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSEnv.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor (because the token is handed to your application via the Epic Games Store launcher) so it is up to your EOS Manager to determine when to use this Login type.
 
-Note that in order to use the "Developer" login type to test your login system, you will need to run the DevAuthTool provided by the SDK [which you can download from your developer portal](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/services-quick-start#step-2---download-the-eos-sdk).
+Note that in order to use the "Developer" login type to test your login system, you will need to run the DevAuthTool provided by the SDK [which you can download from your developer portal](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/services-quick-start#step-2---download-the-eos-sdk). The program is typically located in the "tools" folder of the SDK archive. Be sure to grab it from the same version of the SDK that OpenEOS targets.
 
 <img width = "800" src="Documentation~/DocAssets/DevAuthToolScreen.jpg">
 
@@ -120,12 +120,13 @@ Since this translation seems like a pretty common process and is somewhat compli
 
 **EOSAuth.LoginEpicAccountToProductUserWithCreate()** has an override which acts as the final abstraction for this conversion process. Instead of providing 2 separate callbacks, you provide one custom callback called CreateOrLoginPUIDCallback which returns the result from either the CreateUser op or the Connect Login op 
 
-With the provided helper functions your complete login flow could look something like this if you want simple Epic User verification:
+With the provided helper functions your complete login flow could look something like this if you want a solid Epic User verification:
 
-1. Run the EOSAuth.LoginAuth() with Persistent Auth type and provide a callback to check the result
-2. If Persistent Auth failed, run EOSAuth.LoginAuth() again in the previous callback with Account Portal instead
-3. If Account Portal was successful, run EOSAuth.LoginEpicAccountToProductUserWithCreate() and provide a callback that stores the resulting ProductUserId
-4. Now you have all the user identification necessary to access a vast majority of the SDK functionality
+1. Run the EOSAuth.LoginAuth() with "Persistent Auth" type (in case user already verified from a previous run) and provide a callback to check the result
+2. If Persistent Auth failed, run EOSAuth.LoginAuth() again in the previous callback with "Exchange Code" type (so that they can be automatically logged in from the EGS launcher, though it doesn't always work) and provide a callback to check the result
+3. If Exchange Code failed, run EOSAuth.LoginAuth() again in the previous callback with "Account Portal" type instead (as a last resort so they can use the web portal to log in; This can happen on first run when the user runs the app from the file browser)
+4. If any of the LoginAuth() attempts was successful, run EOSAuth.LoginEpicAccountToProductUserWithCreate() and provide a callback that stores the resulting ProductUserId
+5. Now you have all the user identification necessary to access a vast majority of the SDK functionality
 
 Hopefully this example demonstrates how OpenEOS lets you customize your Auth flow while minimizing the amount of complicated manual conversions needed to complete the Authorization process.
 
@@ -142,7 +143,7 @@ Here are some automated value getters which you might find helpful:
 - **GetExchangeCodeToken()** provides the password token for the ExchangeCode Auth login type.
 - **GetSandboxID()** provides the ID of the running sandbox. When you give a tester a key to play your game on EGS, the Sandbox type you generated the key from will determine which build they are granted. For example, they can run the "Stage" version from EGS in addition to "Dev" or Live. When this happens, the version they click on in the launcher will determine the SandboxID passed into this argument. Your app may then grab this value and use it for Initialization so that the same build can be used across any sandbox. i.e. upload to Dev sandbox and push the same build to Stage.
 
-Do note that any of these tokens could be missing for any reason and OpenEOS will print a warning in that case.
+Do note that any of these tokens could be missing for any reason and OpenEOS will print a warning in that case. Notably, if the user runs the app from outside the Epic Games Store Launcher, there will be no chance for it to pass the command line arguments in.
 
 ## Installation
 
@@ -175,7 +176,7 @@ If installation fails due to version requirements, you may be able force OpenEOS
 
 **Assets path installation**
 
-OpenEOS should also work as a part of your Assets/ directory if you'd like to customize it for your specific project without having to deal with the package system. Simply download the project as a .zip and place the contents anywhere in your Assets folder, as long as they are self-contained so that the Assembly Definition doesn't confuse itself with your other files. Note: when specifying the OpenEOS installation path in EOSCore.Init, you must now use Assets/path_to_openEOS.
+OpenEOS should also work as a part of your `Assets/` directory if you'd like to customize it for your specific project without having to deal with the package system. Simply download the project as a .zip and place the contents anywhere in your Assets folder, as long as they are self-contained so that the Assembly Definition doesn't confuse itself with your other files. Note: when specifying the OpenEOS installation path in EOSCore.Init, you must now use Assets/path_to_openEOS.
 
 ### Want more details about the API?
 
