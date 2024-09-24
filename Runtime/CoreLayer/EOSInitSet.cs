@@ -76,6 +76,12 @@ namespace RobProductions.OpenEOS
 		/// Will be treated as null if empty string.
 		/// </summary>
 		public string encryptionKey = "";
+
+		/// <summary>
+		/// Optional: If true, EOS will launch assuming the client is a dedicated game server.
+		/// Use false for local client, which is most likely what you want.
+		/// </summary>
+		public bool isServerFlag = false;
 	}
 }
 
