@@ -1,3 +1,16 @@
 {
-	"name": "robproductions.openeos.runtime"
+    "name": "robproductions.openeos.runtime",
+    "rootNamespace": "",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "!EOS_DISABLE"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

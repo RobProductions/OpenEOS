@@ -145,6 +145,22 @@ Here are some automated value getters which you might find helpful:
 
 Do note that any of these tokens could be missing for any reason and OpenEOS will print a warning in that case. Notably, if the user runs the app from outside the Epic Games Store Launcher, there will be no chance for it to pass the command line arguments in.
 
+### Disabling at Compile Time
+
+You can now use a scripting define symbol in your project called `EOS_DISABLE` to stop the SDK (and the OpenEOS wrapper library) from being included at compile time. You can do this by navigating to the Project Settings and heading down to the *Scripting Define Symbols* section, where you can add defines for each platform. Alternatively, you can use any of the methods [described here](https://docs.unity3d.com/Manual/CustomScriptingSymbols.html) to set scripting defines via code. A custom Editor plugin that manages building for different platforms should also allow you set custom defines.
+
+**Note:** Since you are required to interface with either OpenEOS or the SDK directly using your own manager code, it is expected that you also check for `EOS_DISABLE` whenever you import or interact with anything provided by this package if you intend use the define symbol. Example usage:
+
+```cs
+#if !EOS_DISABLE
+using RobProductions.OpenEOS;
+using Epic.OnlineServices;
+using Epic.OnlineServices.Auth;
+using Epic.OnlineServices.Achievements;
+using Epic.OnlineServices.Connect;
+#endif
+```
+
 ## Installation
 
 ### Recommended Installation

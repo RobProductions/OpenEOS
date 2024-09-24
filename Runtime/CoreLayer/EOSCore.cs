@@ -201,8 +201,8 @@ namespace RobProductions.OpenEOS
 				DeploymentId = initSet.deploymentID,
 				Flags = initSet.platformFlags,
 				EncryptionKey = encryptionKey,
-				//CacheDirectory = 
-				//IsServer = false,
+				IsServer = initSet.isServerFlag,
+				//CacheDirectory = ???,
 				//OverrideCountryCode = false,
 				//OverrideLocaleCode = false,
 				//TickBudgetInMilliseconds = 0            
@@ -261,7 +261,6 @@ namespace RobProductions.OpenEOS
 		}
 
 		//EDITOR UTIL
-
 
 		//Snippet provided by EOS Sample code
 		//https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started
