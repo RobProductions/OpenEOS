@@ -1,6 +1,4 @@
 
-#WARNING: Experimental! Don't use this yet!
-
 # HOW TO USE THIS:
 
 # Move the EOS SDK Download to the "Tools" directory
@@ -8,10 +6,15 @@
 # not running Unity or while Unity is unfocused so it doesn't
 # generate .meta files.
 
-# Then, run the script in admin mode from a Python Console
-# and delete the leftover files in the "Tools"" directory: 
-# EOSUpdate.zip, the unarchived contents, and the old files
-# which have been placed into the "OldSDKFiles" folder
+# Then, run the script from any command line with "py UpdateEOSVersion.py"
+# and then delete the leftover files/folders in the "Tools" directory: 
+# EOSUpdate.zip, the unarchived contents, the old files
+# which have been placed into the "OldSDKFiles" folder, and 
+# the unneeded files placed into the "UnusedSDKUpdateFiles" folder.
+
+# If everything went well, you will see "Update complete!" printed.
+# After the update is complete, don't forget to set the platform
+# checkboxes for all of the .dll files in the Plugins folder.
 
 import zipfile
 import shutil
@@ -83,7 +86,7 @@ def move_file(src : str, dst : str):
 def move_file_to_junk(src : str, specifiedJunkFolder : str):
 	sourcePath = Path(src)
 	if(not sourcePath.exists()):
-		print(f"No file {src} found to move to {specifiedJunkFolder}, skipping...")
+		print(f"- No file {src} found to move to {specifiedJunkFolder}, skipping...")
 		return
 
 	junkPath = Path(specifiedJunkFolder)

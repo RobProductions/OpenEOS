@@ -78,7 +78,7 @@ Alternatively, you could use the custom path type and provide the *customPathToO
 
 The installation path parameters are only used in Editor mode so that EOSCore can locate the Plugins folder contained within the EOSSDK folder and dynamically load in EOS DLLs before running the main init steps. This is the recommended approach described in the [C# Getting Started page](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/eossdkc-sharp-getting-started). This allows you to completely shutdown the SDK even in Editor at a later time without having to worry about the lifetime of the Unity Editor itself. As of 1.15, the documentation claims that this is the required method for initializing the SDK properly within the Unity Editor.
 
-With just those 2-3 parameters as input into **EOSCore.Init()**, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
+With just those 2-3 parameters as input into `EOSCore.Init()`, you can quickly start up the SDK and retrieve the **PlatformInterface** that you should use in all future requests to the SDK. As long as the returned platform wasn't null, you have successfully started up the SDK. Here's an example:
 
 ```cs
 var initSet = new EOSInitSet()
@@ -100,19 +100,23 @@ if(platform != null)
 }
 ```
 
-Remember to call .Tick() at least a few times per second on the provided PlatformInterface so that EOS can continue running. 
+Remember to call `Tick()` at least a few times per second on the provided PlatformInterface so that EOS can continue running, like so:
 
-In order to determine which SandboxID and DeploymentID you should use, you may be able to use **EOSEnv.GetSandboxID()** to grab a command line parameter which is passed into your app by the Epic Games Launcher. See below for more details on EOSEnv. As per [Epic's testing guide](https://dev.epicgames.com/docs/en-US/epic-games-store/testing-guide), they recommend to use this method to determine your initialization so that you can use the same build on Dev which is eventually pushed to Live. When a user launches in Dev, Stage, or Live sandbox, you will you be able to detect that version and change your EOSInit set. However it is up to you to test this and add in fallback logic should this or if a user attempts to run your app outside of the EGS Launcher.
+```cs
+platform.Tick();
+```
 
-**EOSCore.Shutdown()** will run all the necessary cleanup steps to shut down the SDK. It requires the generated PlatformInterface that was handed to you from Init() so that it can release the memory allocation for your session. Additionally, it dynamically unloads the libraries that were linked in Init() by using Bindings.Unhook. If you used Init() you must use Shutdown() at the end of your application lifecycle, typically in OnApplicationQuit or OnDestroy if you only have one scene.
+In order to determine which SandboxID and DeploymentID you should use, you can use `EOSEnv.GetSandboxID()` to grab a certain command line parameter which is passed into your app by the Epic Games Launcher. See below for more details on **EOSEnv**. As per [Epic's testing guide](https://dev.epicgames.com/docs/en-US/epic-games-store/testing-guide), they recommend to use this method to determine your initialization so that you can use the same build on Dev which is eventually pushed to Live. When a user launches in Dev, Stage, or Live sandbox, you will you be able to detect that version and change your EOSInit set. Be sure to add in fallback logic if any step fails, like if a user attempts to run your app outside of the EGS Launcher.
+
+**EOSCore.Shutdown()** will run all the necessary cleanup steps to shut down the SDK. It requires the generated PlatformInterface that was handed to you from Init() so that it can release the memory allocation for your session. Additionally, it dynamically unloads the libraries that were linked in Init() by using Bindings.Unhook. If you used Init() you must use Shutdown() at the end of your application lifecycle, typically in `OnApplicationQuit()` or `OnDestroy()` if you need it unloaded earlier. You should call `Shutdown()` even when testing in the Editor when the play session stops.
 
 ### EOSAuth Layer
 
 EOSAuth provides helpful shortcuts for working with EOS accounts and the user systems. There are 2 main login systems for EOS: Auth and Connect. 
 
-**EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSLoginAuthSet class with the Credentials filled out and LoginAuth() will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
+**EOSAuth.LoginAuth()** lets you login a user via the Auth system. The Auth system relates to Epic accounts only. Provide the custom EOSLoginAuthSet class with the Credentials filled out and `LoginAuth()` will run the async operation within the SDK. To get the result, pass in the OnLoginCallback which is invoked when the operation is complete. Based on the ResultCode, Login may have been successful or failed due to various reasons. Epic recommends that you attempt multiple types of Login for convenience, i.e. Persistent Auth to see if a session is already stored -> Exchange Code coming from the launcher itself -> AccountPortal as a fallback which opens up a web browser, with each type only activating if the previous failed. Once you get a result, you can grab the given EpicAccountId as a reference to your Epic user. Learn more about the Auth Interface [here](https://dev.epicgames.com/docs/epic-account-services/auth/auth-interface).
 
-For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use **EOSEnv.GetExchangeCodeToken()** to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor (because the token is handed to your application via the Epic Games Store launcher) so it is up to your EOS Manager to determine when to use this Login type.
+For the Exchange Code Login type, you will need to grab the user token argument from the command line. Use `EOSEnv.GetExchangeCodeToken()` (explained below) to quickly grab this token from the System Environment. Note that this will definitely fail in the Editor (because the token is handed to your application via the Epic Games Store launcher) so it is up to your EOS Manager to determine when to use this Login type.
 
 Note that in order to use the "Developer" login type to test your login system, you will need to run the DevAuthTool provided by the SDK [which you can download from your developer portal](https://dev.epicgames.com/docs/epic-online-services/eos-get-started/services-quick-start#step-2---download-the-eos-sdk). The program is typically located in the "tools" folder of the SDK archive. Be sure to grab it from the same version of the SDK that OpenEOS targets.
 
@@ -120,22 +124,22 @@ Note that in order to use the "Developer" login type to test your login system, 
 
 Great, so you've got an EpicAccountId. Unfortunately, this only gets you so far as some of the SDK expects a reference to a more generic type of user called a Product User, which you must log in using the [Connect Interface](https://dev.epicgames.com/docs/game-services/eos-connect-interface). With the Connect system, you can either attempt to translate your Epic user (via EpicAccountId) or use a verified provider service to log your user in (via Google, Steam, Playstation, etc.)
 
-**EOSAuth.LoginConnect()** is a wrapper for the Connect login process. It takes the Credentials of user and some optional additional information in the custom EOSLoginConnectSet data container, and a callback that you provide which returns to you the ResultCode of the async operation. With an external provider, you can fill out the expected credential type and include the relevant information, but for an Epic user you'll want to use the EpicIdToken type and then use Auth.CopyIdTokenOptions() to retrieve the idToken of your user before placing it into the credentials.
+**EOSAuth.LoginConnect()** is a wrapper for the Connect login process. It takes the Credentials of user and some optional additional information in the custom EOSLoginConnectSet data container, and a callback that you provide which returns to you the ResultCode of the async operation. With an external provider, you can fill out the expected credential type and include the relevant information, but for an Epic user you'll want to use the EpicIdToken type and then use `Auth.CopyIdTokenOptions()` to retrieve the idToken of your user before placing it into the credentials.
 
-Since this translation seems like a pretty common process and is somewhat complicated, I've included a few encapsulating functions that can internally handle this conversion from EpicAccountId to ProductUserId without needing to call EOSAuth.LoginConnect() yourself. 
+Since this translation seems like a pretty common process and is somewhat complicated, I've included a few encapsulating functions that can internally handle this conversion from EpicAccountId to ProductUserId without needing to call `EOSAuth.LoginConnect()` yourself. 
 
-**EOSAuth.LoginEpicAccountToProductUser()** will attempt to generate the idToken when given an EpicAccountId and automatically call EOSAuth.LoginConnect(), handing over your provided callback to get the result. There is one issue with this approach though, and it's that the operation could fail due to the Connect user not existing in the EOS service. Since this only attempts to log in, the link will between the Epic User and the Product User may not have been made yet. To learn how to fix this, you can check [this resource](https://dev.epicgames.com/docs/en-US/api-ref/functions/eos-connect-create-user) or use the following helper function.
+**EOSAuth.LoginEpicAccountToProductUser()** will attempt to generate the idToken when given an EpicAccountId and automatically call `EOSAuth.LoginConnect()`, handing over your provided callback to get the result. There is one issue with this approach though, and it's that the operation could fail due to the Connect user not existing in the EOS service. Since this only attempts to log in, the link will between the Epic User and the Product User may not have been made yet. To learn how to fix this, you can check [this resource](https://dev.epicgames.com/docs/en-US/api-ref/functions/eos-connect-create-user) or use the following helper function.
 
 **EOSAuth.LoginEpicAccountToProductUserWithCreate()** will do the same as the previous function, but with the added step of creating the Connect user if it has not been linked yet. It will return a result to either the Login callback or the CreateUser callback that you provide. Now, when you get a result from either one of these, you can check for success and grab the ProductUserId that was either created or logged in as a result of the operations.
 
-**EOSAuth.LoginEpicAccountToProductUserWithCreate()** has an override which acts as the final abstraction for this conversion process. Instead of providing 2 separate callbacks, you provide one custom callback called CreateOrLoginPUIDCallback which returns the result from either the CreateUser op or the Connect Login op 
+**EOSAuth.LoginEpicAccountToProductUserWithCreate()** has an override which acts as the final abstraction for this conversion process. Instead of providing 2 separate callbacks, you provide one custom callback called CreateOrLoginPUIDCallback which returns the result from either the CreateUser operation or the Connect Login operation.
 
 With the provided helper functions your complete login flow could look something like this if you want a solid Epic User verification:
 
-1. Run the EOSAuth.LoginAuth() with "Persistent Auth" type (in case user already verified from a previous run) and provide a callback to check the result
-2. If Persistent Auth failed, run EOSAuth.LoginAuth() again in the previous callback with "Exchange Code" type (so that they can be automatically logged in from the EGS launcher, though it doesn't always work) and provide a callback to check the result
-3. If Exchange Code failed, run EOSAuth.LoginAuth() again in the previous callback with "Account Portal" type instead (as a last resort so they can use the web portal to log in; This can happen on first run when the user runs the app from the file browser)
-4. If any of the LoginAuth() attempts was successful, run EOSAuth.LoginEpicAccountToProductUserWithCreate() and provide a callback that stores the resulting ProductUserId
+1. Run the `EOSAuth.LoginAuth()` with "Persistent Auth" type (in case user already verified from a previous run) and provide a callback to check the result
+2. If Persistent Auth failed, run `EOSAuth.LoginAuth()` again in the previous callback with "Exchange Code" type (so that they can be automatically logged in from the EGS launcher, though it doesn't always work) and provide a callback to check the result
+3. If Exchange Code failed, run `EOSAuth.LoginAuth()` again in the previous callback with "Account Portal" type instead (as a last resort so they can use the web portal to log in; This can happen on first run when the user runs the app from the file browser)
+4. If any of the `LoginAuth()` attempts was successful, run `EOSAuth.LoginEpicAccountToProductUserWithCreate()` and provide a callback that stores the resulting ProductUserId
 5. Now you have all the user identification necessary to access a vast majority of the SDK functionality
 
 Hopefully this example demonstrates how OpenEOS lets you customize your Auth flow while minimizing the amount of complicated manual conversions needed to complete the Authorization process.
@@ -144,16 +148,16 @@ Hopefully this example demonstrates how OpenEOS lets you customize your Auth flo
 
 EOSEnv provides some utilities for getting values from the command line, which the EGS Launcher utilizes to tell you information about the running environment.
 
-**EOSEnv.GetAllCommandLineArgs()** will help you debug all of the parameters passed into your app.
+**EOSEnv.GetAllCommandLineArgs()** will help you debug all of the parameters passed into your app. It returns a list of all command line arguments.
 
-**EOSEnv.GetCommandLineArgValue()** returns the value of the parameter when given a name. Epic formats their arguments like -NAME=VALUE, so provide the NAME here to get back the value which is trimmed out internally.
+**EOSEnv.GetCommandLineArgValue()** returns the value of a parameter with the given name. Epic formats their arguments like *-NAME=VALUE*, so provide the `NAME` here to get back the trimmed value for your convenience. Returns `null` if no argument with the given name is found.
 
 Here are some automated value getters which you might find helpful:
 
 - **GetExchangeCodeToken()** provides the password token for the ExchangeCode Auth login type.
-- **GetSandboxID()** provides the ID of the running sandbox. When you give a tester a key to play your game on EGS, the Sandbox type you generated the key from will determine which build they are granted. For example, they can run the "Stage" version from EGS in addition to "Dev" or Live. When this happens, the version they click on in the launcher will determine the SandboxID passed into this argument. Your app may then grab this value and use it for Initialization so that the same build can be used across any sandbox. i.e. upload to Dev sandbox and push the same build to Stage.
+- **GetSandboxID()** provides the ID of the running sandbox. When you give a tester a key to play your game on EGS, the Sandbox type you generated the key from will determine which build they are granted. For example, they can run the "Stage" version from EGS in addition to "Dev" or "Live". When this happens, the version they click on in the launcher will determine the SandboxID passed into this argument. Your app may then grab this value and use it for Initialization so that the same build can be used across any sandbox. i.e. upload to Dev sandbox and push the same build to Stage.
 
-Do note that any of these tokens could be missing for any reason and OpenEOS will print a warning in that case. Notably, if the user runs the app from outside the Epic Games Store Launcher, there will be no chance for it to pass the command line arguments in.
+Do note that any of these tokens could be missing for any reason and OpenEOS will print a warning in that case. Notably, if the user runs the app from outside the Epic Games Store Launcher, there will be no chance for it to pass the command line arguments in. If this is expected, you may want to disable OpenEOS print warnings via `EOSCore.SetLogWarnings()`. It is up to you to create fallback behaviour when no token is found.
 
 ### Disabling at Compile Time
 
@@ -239,7 +243,6 @@ In order to update the included EOS SDK files, first navigate to Epic Games Stor
 2. Rename the .zip file to *EOSUpdate.zip*.
 3. Run the UpdateEOSVersion Python script and check the result in the commit changes.
 4. If it ran successfully, then delete the zip file, the extracted contents folder, and the old SDK files which have all been placed into the */Tools* folder.
-5. Check that the version was updated when running the testbed project.
 
 **Manual Update**
 
@@ -250,7 +253,8 @@ In order to update the included EOS SDK files, first navigate to Epic Games Stor
 5. Rename the *Bin* folder in *SDK* to *Plugins*.
 6. Delete the *Android* and *IOS* folders from the new *Plugins* folder.
 7. Delete the Linux Arm 64 .so file in the *Plugins* folder.
-8. Check that the version was updated when running the testbed project.
+
+After either method has been completed, everything in the Plugins folder needs to be updated within Unity so that each library file is only imported for the relevant platform. For example, the toggles for *EOSSDK-Win32-Shipping* must be checked for x86 and unchecked for x64. The Linux .so file should be set to "Any CPU" for Linux and "None" for Mac. The Mac file should be set to "Any CPU". After this is done, you can run the testbed project to ensure that the SDK initializes successfully, and use `Epic.OnlineServices.Version.VersionInterface.GetVersion()` to check that the SDK has been updated to the desired version.
 
 ## Credits & Details
 
