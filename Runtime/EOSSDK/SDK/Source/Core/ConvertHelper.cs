@@ -46,7 +46,7 @@ namespace Epic.OnlineServices
 		/// </summary>
 		/// <param name="from">The value to convert from.</param>
 		/// <param name="to">The converted value.</param>
-		private static void Convert(byte[] from, out string to)
+		private static void Convert(byte[] from, out Utf8String to)
 		{
 			to = null;
 
@@ -55,7 +55,7 @@ namespace Epic.OnlineServices
 				return;
 			}
 
-			to = Encoding.ASCII.GetString(from.Take(GetAnsiStringLength(from)).ToArray());
+			to = Encoding.ASCII.GetString(from, 0, GetAnsiStringLength(from));
 		}
 
 		/// <summary>
@@ -71,7 +71,9 @@ namespace Epic.OnlineServices
 				from = "";
 			}
 
-			to = Encoding.ASCII.GetBytes(new string(from.Take(fromLength).ToArray()).PadRight(fromLength, '\0'));
+			to = new byte[fromLength];
+			ASCIIEncoding.ASCII.GetBytes(from, 0, from.Length, to, 0);
+			to[from.Length] = 0;  //  Null terminator at the end'\0'
 		}
 
 		/// <summary>
@@ -109,10 +111,10 @@ namespace Epic.OnlineServices
 		}
 
 		/// <summary>
-		/// Converts from an <see cref="ArraySegment{TArray}" /> to an <see cref="int" />.
-		/// Outputs the length of the <see cref="ArraySegment{TArray}" />.
+		/// Converts from an <see cref="ArraySegment{T}" /> to an <see cref="int" />.
+		/// Outputs the length of the <see cref="ArraySegment{T}" />.
 		/// </summary>
-		/// <typeparam name="TArray">The type of the <see cref="Array" />.</typeparam>
+		/// <typeparam name="T">The type of the <see cref="Array" />.</typeparam>
 		/// <param name="from">The value to convert from.</param>
 		/// <param name="to">The converted value; the length of the <see cref="ArraySegment{TArray}" />.</param>
 		private static void Convert<TArray>(ArraySegment<TArray> from, out int to)
@@ -121,10 +123,10 @@ namespace Epic.OnlineServices
 		}
 
 		/// <summary>
-		/// Converts from an <see cref="ArraySegment{TArray}" /> to an <see cref="uint" />.
-		/// Outputs the length of the <see cref="ArraySegment{TArray}" />.
+		/// Converts from an <see cref="ArraySegment{T}" /> to an <see cref="uint" />.
+		/// Outputs the length of the <see cref="ArraySegment{T}" />.
 		/// </summary>
-		/// <typeparam name="TArray">The type of the <see cref="Array" />.</typeparam>
+		/// <typeparam name="T">The type of the <see cref="Array" />.</typeparam>
 		/// <param name="from">The value to convert from.</param>
 		/// <param name="to">The converted value; the length of the <see cref="ArraySegment{TArray}" />.</param>
 		private static void Convert<T>(ArraySegment<T> from, out uint to)

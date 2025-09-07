@@ -288,7 +288,7 @@ namespace RobProductions.OpenEOS
 		private static void LoadEditorLibraries(string libraryPathPrefix)
 		{
 #if UNITY_EDITOR
-			var libraryPath = libraryPathPrefix + Config.LibraryName;
+			var libraryPath = libraryPathPrefix + Common.LIBRARY_NAME;
 
 			m_LibraryPointer = LoadLibrary(libraryPath);
 			if (m_LibraryPointer == IntPtr.Zero)
