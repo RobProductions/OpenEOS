@@ -24,12 +24,12 @@ sdkUnzippedFolderName = "EOSUpdateExtracted"
 oldSdkJunkFolderName = "OldSDKFiles"
 unusedSdkJunkFolderName = "UnusedSDKUpdateFiles"
 
-def unzip_file(zip_file_path, extract_to):
+def unzip_file(zip_file_path : str, extract_to : str):
 	with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
 		zip_ref.extractall(extract_to)
 	print(f"Extracted {zip_file_path} to {extract_to}")
 
-def copy_file(source_file, destination_file):
+def copy_file(source_file : str, destination_file : str):
 	source = Path(source_file)
 	dest = Path(destination_file)
 	
@@ -44,7 +44,7 @@ def copy_file(source_file, destination_file):
 		print(f"Error: Exception when copying file!")
 		print(e)
 
-def copy_folder_tree(src_folder, dst_folder):
+def copy_folder_tree(src_folder : str, dst_folder : str):
 	source = Path(src_folder)
 	dest = Path(dst_folder)
 
@@ -59,13 +59,13 @@ def copy_folder_tree(src_folder, dst_folder):
 		print(f"Error: Exception when copying folder tree!")
 		print(e)
 
-def copy_all(src, dst):
+def copy_all(src : str, dst : str):
 	if(os.path.isdir(src)):
 		copy_folder_tree(src, dst)
 	else:
 		copy_file(src, dst)
 
-def move_file(src, dst):
+def move_file(src : str, dst : str):
 	source = Path(src)
 	dest = Path(dst)
 
@@ -80,18 +80,18 @@ def move_file(src, dst):
 		print(f"Error: Exception when moving file! {source} to {dest}")
 		print(e)
 
-def move_file_to_junk(src, specifiedJunkFolder):
+def move_file_to_junk(src : str, specifiedJunkFolder : str):
 	sourcePath = Path(src)
 	if(not sourcePath.exists()):
-		print(f"No file {src} found to move to {oldSdkJunkFolderName}, skipping...")
+		print(f"No file {src} found to move to {specifiedJunkFolder}, skipping...")
 		return
 
-	junkPath = Path(oldSdkJunkFolderName)
+	junkPath = Path(specifiedJunkFolder)
 	if(not junkPath.exists()):
 		os.makedirs(junkPath)
 
 	if(not junkPath.exists()):
-		print(f"Error: JunkPath was not created correctly")
+		print(f"Error: JunkPath {specifiedJunkFolder} was not created correctly")
 		return
 
 	backRemovedPath : str = src
@@ -100,9 +100,9 @@ def move_file_to_junk(src, specifiedJunkFolder):
 
 	move_file(src, os.path.join(junkPath, backRemovedPath))
 
-def move_unity_file_to_junk(src):
-	move_file_to_junk(src)
-	move_file_to_junk(src + ".meta")
+def move_unity_file_to_junk(src : str, specifiedJunkFolder : str):
+	move_file_to_junk(src, specifiedJunkFolder)
+	move_file_to_junk(src + ".meta", specifiedJunkFolder)
 
 def _main():
 	print(f"Starting EOS Updater...")
@@ -133,8 +133,8 @@ def _main():
 	pathToSDKParent = os.path.join(sdkFolder, "SDK")
 	pathToThirdPartyNotices = os.path.join(sdkFolder, "ThirdPartyNotices")
 
-	move_unity_file_to_junk(pathToSDKParent)
-	move_unity_file_to_junk(pathToThirdPartyNotices)
+	move_unity_file_to_junk(pathToSDKParent, oldSdkJunkFolderName)
+	move_unity_file_to_junk(pathToThirdPartyNotices, oldSdkJunkFolderName)
 
 	# Now copy the extracted SDK files to the EOSSDK folder
 
@@ -144,30 +144,22 @@ def _main():
 	copy_all(pathToExtractedSDKFolder, pathToSDKParent)
 	copy_all(pathToExtractedThirdPartyFolder, pathToThirdPartyNotices)
 
+	# Rename "Bin" to "Plugins"
+
+	pathToBinFolder = os.path.join(pathToSDKParent, "Bin")
+	pathToPluginsFolder = os.path.join(pathToSDKParent, "Plugins")
+	move_file(pathToBinFolder, pathToPluginsFolder)
+
 	# Then systematically move unneeded files and folders to junk,
 	# such as the "SDK/Tools" folder and IOS/Android framework
 
-	print("Success")
-	return
+	move_unity_file_to_junk(os.path.join(pathToSDKParent, "Tools"), unusedSdkJunkFolderName)
+	move_unity_file_to_junk(os.path.join(pathToPluginsFolder, "Android"), unusedSdkJunkFolderName)
+	move_unity_file_to_junk(os.path.join(pathToPluginsFolder, "IOS"), unusedSdkJunkFolderName)
+	move_unity_file_to_junk(os.path.join(pathToPluginsFolder, "libEOSSDK-LinuxArm64-Shipping.so"), unusedSdkJunkFolderName)
+	
+	# All steps are now done!
 
-	# Now copy the relevant files
-	
-	copy_file(pathToUnzipFolderString + "/ThirdPartyNotices/ThirdPartySoftwareNotice.txt", sdkFolder + "/ThirdPartyNotices/ThirdPartySoftwareNotice.txt")
-	copy_file(pathToUnzipFolderString + "/SDK/Bin/EOSSDK-Win32-Shipping.dll", sdkFolder + "/SDK/Plugins/EOSSDK-Win32-Shipping.dll")
-	copy_file(pathToUnzipFolderString + "/SDK/Bin/EOSSDK-Win64-Shipping.dll", sdkFolder + "/SDK/Plugins/EOSSDK-Win64-Shipping.dll")
-	copy_file(pathToUnzipFolderString + "/SDK/Bin/libEOSSDK-Linux-Shipping.so", sdkFolder + "/SDK/Plugins/libEOSSDK-Linux-Shipping.so")
-	copy_file(pathToUnzipFolderString + "/SDK/Bin/libEOSSDK-Mac-Shipping.dylib", sdkFolder + "/SDK/Plugins/libEOSSDK-Mac-Shipping.dylib")
-	
-	#TODO: This doesn't seem to work right...
-	#Help wanted: how to copy entire folders correctly?
-	#For now, please copy these manually from the file system
-	#TODO: ALSO! Sometimes files can get deleted in newer versions
-	#So really what needs to happen is to delete the "Source" folder first
-	#and then copy in the new contents
-	copy_tree(pathToUnzipFolderString + "/SDK/Bin/x86/", sdkFolder + "/SDK/Plugins/x86/")
-	copy_tree(pathToUnzipFolderString + "/SDK/Bin/x64/", sdkFolder + "/SDK/Plugins/x64/")
-	copy_tree(pathToUnzipFolderString + "/SDK/Source/", sdkFolder + "/SDK/Source/")
-	
 	print(f"Update complete!")
 	
 

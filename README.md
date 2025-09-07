@@ -246,10 +246,10 @@ In order to update the included EOS SDK files, first navigate to Epic Games Stor
 1. Extract the .zip file contents
 2. Delete the *SDK* and *ThirdPartyNotices* folders from the */Runtime/EOSSDK/* folder.
 3. Drag in the new *SDK* and *ThirdPartyNotices* folders from the .zip file contents.
-4. Delete the *Tools* folder from the new *SDK* folder.
-5. Rename the *Bin* folder to *Plugins*.
-6. Delete the *Android* and *IOS* folders from the new *SDK* folder.
-7. Delete the Linux Arm 64 .so file in the *SDK* folder.
+4. Delete the *Tools* folder from the *SDK* folder that got copied in.
+5. Rename the *Bin* folder in *SDK* to *Plugins*.
+6. Delete the *Android* and *IOS* folders from the new *Plugins* folder.
+7. Delete the Linux Arm 64 .so file in the *Plugins* folder.
 8. Check that the version was updated when running the testbed project.
 
 ## Credits & Details
