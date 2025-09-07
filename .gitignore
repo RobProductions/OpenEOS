@@ -62,4 +62,5 @@ crashlytics-build.properties
 # For EOS Update
 Tools/EOSUpdate.zip
 Tools/EOSUpdateExtracted
+Tools/OldSDKFiles
 

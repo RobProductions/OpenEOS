@@ -6,7 +6,6 @@ using Epic.OnlineServices.Platform;
 using System.Runtime.InteropServices;
 using System;
 using System.IO;
-using Epic.OnlineServices.Auth;
 
 namespace RobProductions.OpenEOS
 {
@@ -23,7 +22,7 @@ namespace RobProductions.OpenEOS
 		public enum InstallationPathType
 		{
 			GitRemotePackage = 0,
-			LocalPackge = 1,
+			LocalPackage = 1,
 			CustomPath = 2
 		}
 
@@ -77,7 +76,7 @@ namespace RobProductions.OpenEOS
 
 			var finalPathToOpenEOS = customPathToOpenEOS;
 
-			if (openEOSPathType == InstallationPathType.LocalPackge)
+			if (openEOSPathType == InstallationPathType.LocalPackage)
 			{
 				//This should be a constant path in Packages
 				finalPathToOpenEOS = Path.Combine("Packages", eosPackageName);

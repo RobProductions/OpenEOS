@@ -1,20 +1,27 @@
 
 #WARNING: Experimental! Don't use this yet!
 
-#HOW TO USE THIS:
+# HOW TO USE THIS:
 
-#Move the EOS SDK Download to the "Tools" directory
-#and rename it to EOSUpdate.zip
+# Move the EOS SDK Download to the "Tools" directory
+# and rename it to EOSUpdate.zip. Be sure to do this while
+# not running Unity or while Unity is unfocused so it doesn't
+# generate .meta files.
 
-#Then, run the script and delete the leftover files in the 
-#Tools directory: EOSUpdate.zip and the unarchived contents
-
-#You must run in admin mode from Windows Terminal/CMD
+# Then, run the script in admin mode from a Python Console
+# and delete the leftover files in the "Tools"" directory: 
+# EOSUpdate.zip, the unarchived contents, and the old files
+# which have been placed into the "OldSDKFiles" folder
 
 import zipfile
 import shutil
 import os
 from pathlib import Path
+
+sdkFolder = "../Runtime/EOSSDK"
+sdkZipFileName = "EOSUpdate.zip"
+sdkUnzippedFolderName = "EOSUpdateExtracted"
+junkFolderName = "OldSDKFiles"
 
 def unzip_file(zip_file_path, extract_to):
 	with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
@@ -52,48 +59,95 @@ def copy_tree(src, dst, symlinks=False, ignore=None):
 			print(f"Error: Exception when copying folder!")
 			print(e)
 	
-	#done copying tree
+	# Done copying tree
 	print(f"- Copied {src} to {dst}")
+
+def move_file(src, dst):
+	source = Path(src)
+	dest = Path(dst)
+
+	if(not source.exists()):
+		print(f"Error: Source path {src} did not exist!")
+		return
+	
+	try:
+		shutil.move(source, dest)
+		print(f"- Moved {source} to {dest}")
+	except Exception as e:
+		print(f"Error: Exception when moving file! {source} to {dest}")
+		print(e)
+
+def move_file_to_junk(src):
+	sourcePath = Path(src)
+	if(not sourcePath.exists()):
+		print(f"No file {src} found to move to {junkFolderName}, skipping...")
+		return
+
+	junkPath = Path(junkFolderName)
+	if(not junkPath.exists()):
+		os.makedirs(junkPath)
+
+	if(not junkPath.exists()):
+		print(f"Error: JunkPath was not created correctly")
+		return
+
+	move_file(src, os.path.join(junkPath, src))
+
+def move_unity_file_to_junk(src):
+	move_file_to_junk(src)
+	move_file_to_junk(src + ".meta")
 
 def _main():
 	print(f"Starting EOS Updater...")
-	print(f"Be sure to move the SDK zip to this directory & name it EOSUpdate.zip")
+	print(f"Be sure to move the SDK zip to this directory & name it {sdkZipFileName}")
 	
 	# Unzip the file
-	zip_file_path = 'EOSUpdate.zip'
-	zip_file = Path(zip_file_path)
-	if(not zip_file.is_file()):
-		#zip file doesn't exist
-		print(f"Error: No EOSUpdate.zip found in same directory")
+	pathToZipFileString = sdkZipFileName
+	zipFilePath = Path(pathToZipFileString)
+	if(not zipFilePath.is_file()):
+		# Zip file doesn't exist
+		print(f"Error: No {sdkZipFileName} found in same directory")
 		return
 	
-	extract_to = 'EOSUpdateExtracted'
-	unzip_file(zip_file_path, extract_to)
+	pathToUnzipFolderString = sdkUnzippedFolderName
+	unzip_file(pathToZipFileString, pathToUnzipFolderString)
 	
-	extracted_folder = Path(extract_to)
-	if(not extracted_folder.is_dir()):
-		#folder doesn't exist
-		print(f"Error: No EOSUpdateExtracted found in same directory")
+	extractedFolderPath = Path(pathToUnzipFolderString)
+	if(not extractedFolderPath.is_dir()):
+		# Folder doesn't exist
+		print(f"Error: No folder {sdkUnzippedFolderName} found in same directory")
 		return
+
+	# Now move the current SDK files into a different folder
+	# so they can be deleted easily. This is safer than trying to "rm"
+	# from Python just in case something goes wrong.
+
+	pathToSDKParent = sdkFolder + "/SDK"
+	pathToThirdPartyNotices = sdkFolder + "/ThirdPartyNotices"
+
+	move_unity_file_to_junk(pathToSDKParent)
+	move_unity_file_to_junk(pathToThirdPartyNotices)
+
+	print("Success")
+	return
+
+	# Now copy the relevant files
 	
-	#Now copy the relevant files
-	
-	sdkfolder = "../Runtime/EOSSDK"
-	copy_file(extract_to + "/ThirdPartyNotices/ThirdPartySoftwareNotice.txt", sdkfolder + "/ThirdPartyNotices/ThirdPartySoftwareNotice.txt")
-	copy_file(extract_to + "/SDK/Bin/EOSSDK-Win32-Shipping.dll", sdkfolder + "/SDK/Plugins/EOSSDK-Win32-Shipping.dll")
-	copy_file(extract_to + "/SDK/Bin/EOSSDK-Win64-Shipping.dll", sdkfolder + "/SDK/Plugins/EOSSDK-Win64-Shipping.dll")
-	copy_file(extract_to + "/SDK/Bin/libEOSSDK-Linux-Shipping.so", sdkfolder + "/SDK/Plugins/libEOSSDK-Linux-Shipping.so")
-	copy_file(extract_to + "/SDK/Bin/libEOSSDK-Mac-Shipping.dylib", sdkfolder + "/SDK/Plugins/libEOSSDK-Mac-Shipping.dylib")
+	copy_file(pathToUnzipFolderString + "/ThirdPartyNotices/ThirdPartySoftwareNotice.txt", sdkFolder + "/ThirdPartyNotices/ThirdPartySoftwareNotice.txt")
+	copy_file(pathToUnzipFolderString + "/SDK/Bin/EOSSDK-Win32-Shipping.dll", sdkFolder + "/SDK/Plugins/EOSSDK-Win32-Shipping.dll")
+	copy_file(pathToUnzipFolderString + "/SDK/Bin/EOSSDK-Win64-Shipping.dll", sdkFolder + "/SDK/Plugins/EOSSDK-Win64-Shipping.dll")
+	copy_file(pathToUnzipFolderString + "/SDK/Bin/libEOSSDK-Linux-Shipping.so", sdkFolder + "/SDK/Plugins/libEOSSDK-Linux-Shipping.so")
+	copy_file(pathToUnzipFolderString + "/SDK/Bin/libEOSSDK-Mac-Shipping.dylib", sdkFolder + "/SDK/Plugins/libEOSSDK-Mac-Shipping.dylib")
 	
 	#TODO: This doesn't seem to work right...
-	#Helped wanted: how to copy entire folders correctly?
+	#Help wanted: how to copy entire folders correctly?
 	#For now, please copy these manually from the file system
 	#TODO: ALSO! Sometimes files can get deleted in newer versions
 	#So really what needs to happen is to delete the "Source" folder first
 	#and then copy in the new contents
-	copy_tree(extract_to + "/SDK/Bin/x86/", sdkfolder + "/SDK/Plugins/x86/")
-	copy_tree(extract_to + "/SDK/Bin/x64/", sdkfolder + "/SDK/Plugins/x64/")
-	copy_tree(extract_to + "/SDK/Source/", sdkfolder + "/SDK/Source/")
+	copy_tree(pathToUnzipFolderString + "/SDK/Bin/x86/", sdkFolder + "/SDK/Plugins/x86/")
+	copy_tree(pathToUnzipFolderString + "/SDK/Bin/x64/", sdkFolder + "/SDK/Plugins/x64/")
+	copy_tree(pathToUnzipFolderString + "/SDK/Source/", sdkFolder + "/SDK/Source/")
 	
 	print(f"Update complete!")
 	

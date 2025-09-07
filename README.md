@@ -27,6 +27,16 @@ You can use OpenEOS in either or both of the following ways:
 1. A neatly packaged container for the EOS SDK that you can interface with directly by importing the Epic.OnlineServices namespace into your custom setup code.
 2. A set of extensions that themselves can interact with the packaged SDK which provide helper functions to let you more quickly get around the SDK. Simply import the RobProductions.OpenEOS namespace and you can use the *EOSCore*, *EOSAuth*, and *EOSEnv* static libraries to quickly implement some common SDK steps: Initialization, Shutdown, Auth system login, Connect system login, translating EpicAccountId to ProductUserId, and acquiring command line arguments passed from the EGS Launcher.
 
+### What kinds of projects can use OpenEOS?
+
+OpenEOS is supported on the following platforms:
+
+- Windows (x86, x64, and Universal Windows Platform)
+- Mac (x86 and Apple Silicon)
+- Linux (64 bit)
+
+The package is most commonly tested on Windows. You can use OpenEOS in a project that builds for iOS, Android, or Web, but you should use the `EOS_DISABLE` define as explained below to strip out the SDK on those platforms. If you'd like to use the Epic Online Services SDK for an unsupported platform, check out Epic's [documentation for the other SDK platforms](https://dev.epicgames.com/docs/epic-online-services/platforms) to learn more about how to intregrate it.
+
 ## Versioning
 
 Since this package is both a port of the EOS SDK and an extension, there is the unique challenge of versioning since the package code builds on top of the included EOS SDK version. Since users likely care about which version of the SDK they are integrating and are compatible with, the Release Number will be laid out like this:
@@ -35,7 +45,7 @@ Since this package is both a port of the EOS SDK and an extension, there is the 
 
 Unfortunately, since Unity [enforces the SemVer system in the package.json](https://docs.unity3d.com/Manual/upm-semver.html), the scheme laid out above will only be viewable from Github itself, so use the release tags as a reference for what code version maps to which SDK version. Within the package manager itself, you will only see X.X.X, so it's up to you to know how that corresponds to the EOS SDK version.
 
-**Current EOS SDK Target:** 1.16.1
+**Current EOS SDK Target:** 1.17.1.3
 
 ### Disclaimer
 
@@ -159,7 +169,10 @@ using Epic.OnlineServices.Auth;
 using Epic.OnlineServices.Achievements;
 using Epic.OnlineServices.Connect;
 #endif
+// ... The rest of your script
 ```
+
+If you do not use the `EOS_DISABLE` define, then you do not have to worry about compile time conditionals like the one demonstrated the above. However, note that the OpenEOS .asmdef file is configured to only import the package on the supported platforms. For example, if you include this package in a project that builds for Android, you must use `EOS_DISABLE` to strip out EOS-only code (or use some other method of detecting the current platform at compile time to stop the imports) or else you will face "missing library" errors since the .dlls are never included in your Android build.
 
 ## Installation
 
@@ -215,6 +228,29 @@ This open source project is free for all to suggest improvements, and I'm hoping
 3. Create a new branch or work off of your own "working branch"
 4. When your changes are complete, submit a pull request to merge your code; ideally to the "working-branch" used to test changes before main
 5. If the PR is approved, aggregate changes will eventually be merged into main and a new release tag is created
+
+### Updating the Bundled EOS SDK files
+
+In order to update the included EOS SDK files, first navigate to Epic Games Store's SDK downloader web page [here](https://onlineservices.epicgames.com/en-US/sdk) and download the latest C# SDK. From here, you can either run a helper Python script to complete the automated update process, or you can manually extract the files to the correct location.
+
+**Automated Updater**
+
+1. Move the .zip file that you downloaded from the the web page into the */Tools* folder which contains the UpdateEOSVersion.py script.
+2. Rename the .zip file to *EOSUpdate.zip*.
+3. Run the UpdateEOSVersion Python script and check the result in the commit changes.
+4. If it ran successfully, then delete the zip file, the extracted contents folder, and the old SDK files which have all been placed into the */Tools* folder.
+5. Check that the version was updated when running the testbed project.
+
+**Manual Update**
+
+1. Extract the .zip file contents
+2. Delete the *SDK* and *ThirdPartyNotices* folders from the */Runtime/EOSSDK/* folder.
+3. Drag in the new *SDK* and *ThirdPartyNotices* folders from the .zip file contents.
+4. Delete the *Tools* folder from the new *SDK* folder.
+5. Rename the *Bin* folder to *Plugins*.
+6. Delete the *Android* and *IOS* folders from the new *SDK* folder.
+7. Delete the Linux Arm 64 .so file in the *SDK* folder.
+8. Check that the version was updated when running the testbed project.
 
 ## Credits & Details
 
