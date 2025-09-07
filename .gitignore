@@ -63,4 +63,5 @@ crashlytics-build.properties
 Tools/EOSUpdate.zip
 Tools/EOSUpdateExtracted
 Tools/OldSDKFiles
+Tools/UnusedSDKUpdateFiles
 

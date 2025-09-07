@@ -21,7 +21,8 @@ from pathlib import Path
 sdkFolder = "../Runtime/EOSSDK"
 sdkZipFileName = "EOSUpdate.zip"
 sdkUnzippedFolderName = "EOSUpdateExtracted"
-junkFolderName = "OldSDKFiles"
+oldSdkJunkFolderName = "OldSDKFiles"
+unusedSdkJunkFolderName = "UnusedSDKUpdateFiles"
 
 def unzip_file(zip_file_path, extract_to):
 	with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
@@ -35,9 +36,6 @@ def copy_file(source_file, destination_file):
 	if(not source.exists()):
 		print(f"Error: Source path {source_file} did not exist!")
 		return
-	if(not dest.exists()):
-		print(f"Error: Dest path {destination_file} did not exist!")
-		return
 	
 	try:
 		shutil.copy2(source, dest)
@@ -46,21 +44,26 @@ def copy_file(source_file, destination_file):
 		print(f"Error: Exception when copying file!")
 		print(e)
 
-def copy_tree(src, dst, symlinks=False, ignore=None):
-	for item in os.listdir(src):
-		s = os.path.join(src, item)
-		d = os.path.join(dst, item)
-		try:
-			if os.path.isdir(s):
-				shutil.copytree(s, d, symlinks, ignore)
-			else:
-				shutil.copy2(s, d)
-		except Exception as e:
-			print(f"Error: Exception when copying folder!")
-			print(e)
-	
-	# Done copying tree
-	print(f"- Copied {src} to {dst}")
+def copy_folder_tree(src_folder, dst_folder):
+	source = Path(src_folder)
+	dest = Path(dst_folder)
+
+	if(not source.exists()):
+		print(f"Error: Source path {source} did not exist!")
+		return
+
+	try:
+		shutil.copytree(source, dest, False, None)
+		print(f"- Copied Folder Tree {src_folder} to {dst_folder}")
+	except Exception as e:
+		print(f"Error: Exception when copying folder tree!")
+		print(e)
+
+def copy_all(src, dst):
+	if(os.path.isdir(src)):
+		copy_folder_tree(src, dst)
+	else:
+		copy_file(src, dst)
 
 def move_file(src, dst):
 	source = Path(src)
@@ -77,13 +80,13 @@ def move_file(src, dst):
 		print(f"Error: Exception when moving file! {source} to {dest}")
 		print(e)
 
-def move_file_to_junk(src):
+def move_file_to_junk(src, specifiedJunkFolder):
 	sourcePath = Path(src)
 	if(not sourcePath.exists()):
-		print(f"No file {src} found to move to {junkFolderName}, skipping...")
+		print(f"No file {src} found to move to {oldSdkJunkFolderName}, skipping...")
 		return
 
-	junkPath = Path(junkFolderName)
+	junkPath = Path(oldSdkJunkFolderName)
 	if(not junkPath.exists()):
 		os.makedirs(junkPath)
 
@@ -91,7 +94,11 @@ def move_file_to_junk(src):
 		print(f"Error: JunkPath was not created correctly")
 		return
 
-	move_file(src, os.path.join(junkPath, src))
+	backRemovedPath : str = src
+	if(backRemovedPath.startswith("../")):
+		backRemovedPath = backRemovedPath.removeprefix("../")
+
+	move_file(src, os.path.join(junkPath, backRemovedPath))
 
 def move_unity_file_to_junk(src):
 	move_file_to_junk(src)
@@ -119,14 +126,26 @@ def _main():
 		return
 
 	# Now move the current SDK files into a different folder
-	# so they can be deleted easily. This is safer than trying to "rm"
+	# so they can be deleted easily from File Explorer. 
+	# This is safer than trying to "rm"
 	# from Python just in case something goes wrong.
 
-	pathToSDKParent = sdkFolder + "/SDK"
-	pathToThirdPartyNotices = sdkFolder + "/ThirdPartyNotices"
+	pathToSDKParent = os.path.join(sdkFolder, "SDK")
+	pathToThirdPartyNotices = os.path.join(sdkFolder, "ThirdPartyNotices")
 
 	move_unity_file_to_junk(pathToSDKParent)
 	move_unity_file_to_junk(pathToThirdPartyNotices)
+
+	# Now copy the extracted SDK files to the EOSSDK folder
+
+	pathToExtractedSDKFolder = os.path.join(extractedFolderPath, "SDK")
+	pathToExtractedThirdPartyFolder = os.path.join(extractedFolderPath, "ThirdPartyNotices")
+
+	copy_all(pathToExtractedSDKFolder, pathToSDKParent)
+	copy_all(pathToExtractedThirdPartyFolder, pathToThirdPartyNotices)
+
+	# Then systematically move unneeded files and folders to junk,
+	# such as the "SDK/Tools" folder and IOS/Android framework
 
 	print("Success")
 	return
