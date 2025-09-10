@@ -221,7 +221,7 @@ Now you'll be able to see summary comments including descriptions on return valu
 
 ## Updates & Contribution
 
-For now, updates to the EOS SDK will happen manually and likely infrequently since I personally don't always need the latest version for my projects. In the future it would be great to have some automated batch process that places the SDK files correctly and renames the DLL holder to "Plugins" etc. so that can be something to improve in future releases.
+Improvements to the wrapper functions constitude new major, minor, or patch versions of OpenEOS. Updates to the bundled EOS SDK files will happen when Epic has pushed a new version of the SDK and someone runs the automated Python updater to set up the files correctly in a distinct commit. Then, once the commit is merged into the main branch, that SDK version will be used in the next OpenEOS release. The details on how to contribute/update the SDK version are listed below.
 
 ### How to Contribute
 
@@ -242,7 +242,7 @@ In order to update the included EOS SDK files, first navigate to Epic Games Stor
 1. Move the .zip file that you downloaded from the the web page into the */Tools* folder which contains the UpdateEOSVersion.py script.
 2. Rename the .zip file to *EOSUpdate.zip*.
 3. Run the UpdateEOSVersion Python script and check the result in the commit changes.
-4. If it ran successfully, then delete the zip file, the extracted contents folder, and the old SDK files which have all been placed into the */Tools* folder.
+4. If it ran successfully, then delete the zip file, the extracted contents folder, and the old SDK files which have all been placed into the */Tools* folder. This should be all be done while Unity is not running so that .meta files are not generated. If Unity was running, you might get an error due to the previous .dlls still being loaded, but a restart should fix this.
 
 **Manual Update**
 
@@ -262,13 +262,13 @@ Created by [RobProductions](https://twitter.com/RobProductions). RobProductions'
 
 ### Requirements
 
-- Tested with Unity 2020.3.26f1 and .NET 4.x, though it will likely work in earlier versions of Unity too. If support is confirmed for older versions I will gladly update the package JSON to improve compatibility.
+- Tested with Unity 2020.3.26f1 and .NET 4.x, though it will likely work in earlier versions of Unity too. If support is confirmed for older versions I will gladly update the package JSON to improve compatibility. It should work with any Unity version released after 2020 LTS as well unless the Editor API changes in the future.
 
 ### Limitations
 
 - I mainly focused on developing this package for my own use cases which are geared towards PC and Mac deployment. As such, the SDK DLLs are only configured for Windows (32-bit and 64-bit), Mac, and Linux. Mobile platforms such as iOS and Android are not supported currently as I don't have those modules installed in my testing project. DLL conflicts also forced me to remove those libraries for now. If support was confirmed in the future, the DLLs for iOS and Android could be configured correctly and might work with the rest of this project.
 - Due to my own limited use cases for this package, some steps of the SDK Initialization and Login process are simplified and definitions for more advanced configurations are not yet available. These are relatively easy to update, so if you have need of more options in the EOSCore feel free to let me know.
-- Currently the enhancements are mainly limited to SDK initialization, shutdown, and account authorization. This is because EGS Self-publishing only opened up a few days ago at the time of writing, so I haven't had time to look through more of the important SDK features. Also, these are the steps that are most relevant for my use case which will be performed often from my own EOS Managers. Other parts of the SDK I need such as Achievements are relatively simple in comparison, just needing a ProductUserId and string ID, so I felt that no helper functions were necessary and I could implement them directly from my EOS Manager. In the future as I discover more use cases for the SDK I may try to branch out and add more wrappers for commonly-used features. 
+- Currently the enhancements are mainly limited to SDK initialization, shutdown, and account authorization. This is mainly because these are the steps that are most relevant for my use case which will be performed often from my own EOS Managers. Other parts of the SDK I need such as Achievements are relatively simple in comparison, just needing a ProductUserId and string ID, so I felt that no helper functions were necessary and I could implement them directly from my EOS Manager. In the future as I discover more use cases for the SDK I may try to branch out and add more wrappers for commonly-used features. 
 
 ### License
 
